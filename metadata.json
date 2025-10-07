@@ -1,0 +1,8 @@
+{
+  "name": "MAITRI 5",
+  "description": "An AI-powered companion application for astronauts, providing support for health monitoring, mission tasks, and recreation, all powered by the Gemini API.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

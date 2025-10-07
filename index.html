@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MAITRI: Astronaut Companion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'space-dark': '#0c1a3e',
+            'accent-cyan': 'var(--accent-color, #06b6d4)',
+          },
+          fontFamily: {
+             sans: ['Inter', 'sans-serif'],
+          },
+           animation: {
+             'fade-in': 'fadeIn 0.5s ease-in-out',
+             'inhale': 'inhale 4s ease-in-out forwards',
+             'hold': 'hold 4s ease-in-out forwards',
+             'exhale': 'exhale 4s ease-in-out forwards',
+           },
+           keyframes: {
+             fadeIn: {
+               '0%': { opacity: '0' },
+               '100%': { opacity: '1' },
+             },
+             inhale: {
+               '0%': { transform: 'scale(0.5)', opacity: '0.5' },
+               '100%': { transform: 'scale(1)', opacity: '1' },
+             },
+             hold: {
+                '0%': { transform: 'scale(1)', opacity: '1' },
+                '100%': { transform: 'scale(1)', opacity: '1' },
+             },
+             exhale: {
+                '0%': { transform: 'scale(1)', opacity: '1' },
+                '100%': { transform: 'scale(0.5)', opacity: '0.5' },
+             }
+           }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #f3f4f6; /* light mode default */
+    }
+    html.dark body {
+      background-color: #0c1a3e; /* dark mode default */
+    }
+    .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: #9ca3af #e5e7eb;
+    }
+    html.dark .scrollbar-thin {
+        scrollbar-color: #4b5563 #1f2937;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 8px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: #e5e7eb;
+    }
+    html.dark .scrollbar-thin::-webkit-scrollbar-track {
+        background: #1f2937;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #9ca3af;
+        border-radius: 20px;
+        border: 3px solid #e5e7eb;
+    }
+    html.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #4b5563;
+        border-color: #1f2937;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "react/": "https://aistudiocdn.com/react@^19.2.0/",
+      "react": "https://aistudiocdn.com/react@^19.2.0",
+      "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+      "@google/genai": "https://aistudiocdn.com/@google/genai@^1.22.0",
+      "date-fns": "https://aistudiocdn.com/date-fns@^4.1.0"
+    }
+  }
+  </script>
+  <script type="module" src="/index.tsx"></script>
+
+</body>
+</html>

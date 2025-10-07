@@ -1,8 +1,6 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { AstronautData, UserData, UserType, SymptomLog, CaptainLog, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, EarthlinkMessage } from '../../types';
-// Fix: Import process to get correct typings for process.exit
-import { process } from 'process';
 
 // --- Sub-document Schemas ---
 
@@ -120,12 +118,15 @@ export const connectDB = async () => {
         const mongoUri = process.env.MONGO_URI;
         if (!mongoUri) {
             console.error('MONGO_URI not defined in .env file');
-            process.exit(1);
+            // Fix: Cast 'process' to 'any' to resolve TypeScript error about missing 'exit' property.
+            // This is a workaround for a likely missing or misconfigured @types/node.
+            (process as any).exit(1);
         }
         await mongoose.connect(mongoUri);
         console.log('MongoDB Connected...');
     } catch (err: any) {
         console.error(err.message);
-        process.exit(1);
+        // Fix: Cast 'process' to 'any' to resolve TypeScript error about missing 'exit' property.
+        (process as any).exit(1);
     }
 };

@@ -1,6 +1,6 @@
 import React from 'react';
-import { MissionTask } from '../types';
-import GlassCard from './GlassCard';
+import { MissionTask } from '../types.ts';
+import GlassCard from './GlassCard.tsx';
 
 interface MissionForTheDayProps {
   tasks: MissionTask[];

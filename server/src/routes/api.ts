@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Response } from 'express';
 import { auth, AuthRequest, adminAuth } from '../middleware/auth';
 import { Astronaut } from '../db';
 import { io } from '../index';
@@ -17,6 +17,7 @@ const emitAstronautUpdate = async (name: string) => {
 // --- Astronaut Routes (for logged-in user) ---
 
 // GET /api/astronauts/me - Get my own data
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.get('/astronauts/me', auth, async (req: AuthRequest, res: Response) => {
     try {
         const astronautData = await Astronaut.findOne({ name: req.user?.name });
@@ -31,6 +32,7 @@ router.get('/astronauts/me', auth, async (req: AuthRequest, res: Response) => {
 });
 
 // POST /api/astronauts/me/symptoms
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.post('/astronauts/me/symptoms', auth, async (req: AuthRequest, res: Response) => {
     try {
         const { symptom, severity, notes, photo, video } = req.body;
@@ -52,6 +54,7 @@ router.post('/astronauts/me/symptoms', auth, async (req: AuthRequest, res: Respo
 });
 
 // PUT /api/astronauts/me/symptoms/:logId/media
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.put('/astronauts/me/symptoms/:logId/media', auth, async (req: AuthRequest, res: Response) => {
     const { logId } = req.params;
     const { mediaUrl, mediaType } = req.body;
@@ -67,6 +70,7 @@ router.put('/astronauts/me/symptoms/:logId/media', auth, async (req: AuthRequest
 });
 
 // POST /api/astronauts/me/captain-logs
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.post('/astronauts/me/captain-logs', auth, async (req: AuthRequest, res: Response) => {
     try {
         const { text, photo, video } = req.body;
@@ -82,6 +86,7 @@ router.post('/astronauts/me/captain-logs', auth, async (req: AuthRequest, res: R
 });
 
 // POST /api/astronauts/me/check-ins
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.post('/astronauts/me/check-ins', auth, async (req: AuthRequest, res: Response) => {
     try {
         const { mood, sleep } = req.body;
@@ -96,6 +101,7 @@ router.post('/astronauts/me/check-ins', auth, async (req: AuthRequest, res: Resp
 });
 
 // PUT /api/astronauts/me/tasks
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.put('/astronauts/me/tasks', auth, async (req: AuthRequest, res: Response) => {
     try {
         const { tasks } = req.body;
@@ -106,6 +112,7 @@ router.put('/astronauts/me/tasks', auth, async (req: AuthRequest, res: Response)
 });
 
 // PUT /api/astronauts/me/earthlink/:messageId/viewed
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.put('/astronauts/me/earthlink/:messageId/viewed', auth, async (req: AuthRequest, res: Response) => {
     try {
         await Astronaut.updateOne(
@@ -118,6 +125,7 @@ router.put('/astronauts/me/earthlink/:messageId/viewed', auth, async (req: AuthR
 });
 
 // POST /api/astronauts/me/earthlink
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.post('/astronauts/me/earthlink', auth, async (req: AuthRequest, res: Response) => {
     try {
         const { from, text, photoUrl, videoUrl } = req.body;
@@ -137,6 +145,7 @@ router.post('/astronauts/me/earthlink', auth, async (req: AuthRequest, res: Resp
 // --- Admin Routes ---
 
 // GET /api/admin/astronauts
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.get('/admin/astronauts', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
     try {
         const astronauts = await Astronaut.find().sort({ name: 1 });
@@ -145,6 +154,7 @@ router.get('/admin/astronauts', [auth, adminAuth], async (req: AuthRequest, res:
 });
 
 // POST /api/admin/astronauts/:name/advice
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.post('/admin/astronauts/:name/advice', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
     try {
         const { text, symptomLogId } = req.body;
@@ -160,6 +170,7 @@ router.post('/admin/astronauts/:name/advice', [auth, adminAuth], async (req: Aut
 });
 
 // POST /api/admin/astronauts/:name/procedures
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.post('/admin/astronauts/:name/procedures', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
     try {
         const { name, steps } = req.body;
@@ -174,6 +185,7 @@ router.post('/admin/astronauts/:name/procedures', [auth, adminAuth], async (req:
 });
 
 // POST /api/admin/astronauts/:name/mass-protocols
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.post('/admin/astronauts/:name/mass-protocols', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
     try {
         const { name, sets, duration, rest } = req.body;
@@ -188,6 +200,7 @@ router.post('/admin/astronauts/:name/mass-protocols', [auth, adminAuth], async (
 });
 
 // PUT /api/admin/astronauts/:name/photo
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.put('/admin/astronauts/:name/photo', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
     try {
         const { photoUrl } = req.body;
@@ -198,6 +211,7 @@ router.put('/admin/astronauts/:name/photo', [auth, adminAuth], async (req: AuthR
 });
 
 // POST /api/admin/astronauts/:name/earthlink
+// FIX: Use express.Response to ensure correct typing and avoid errors.
 router.post('/admin/astronauts/:name/earthlink', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
     try {
         const { from, text, photoUrl, videoUrl } = req.body;

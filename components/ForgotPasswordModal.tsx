@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { maitriApiService } from '../services/maitriApiService';
+import { maitriApiService } from '../services/maitriApiService.ts';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;

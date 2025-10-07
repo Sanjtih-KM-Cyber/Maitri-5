@@ -1,6 +1,6 @@
 
 import React from 'react';
-import GlassCard from './GlassCard';
+import GlassCard from './GlassCard.tsx';
 
 interface EarthlinkStatusProps {
   hasNewMessage: boolean;

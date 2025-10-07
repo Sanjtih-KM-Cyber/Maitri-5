@@ -1,6 +1,6 @@
 import React from 'react';
-import GlassCard from './GlassCard';
-import { Mood, SleepQuality } from '../types';
+import GlassCard from './GlassCard.tsx';
+import { Mood, SleepQuality } from '../types.ts';
 
 interface DailyBriefingProps {
     astronautName: string;

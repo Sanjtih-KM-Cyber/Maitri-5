@@ -1,15 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { AstronautData, SymptomLog, DoctorAdvice, MissionProcedure, MassProtocol, EarthlinkMessage } from '../types';
-import { maitriApiService } from '../services/maitriApiService';
-import Avatar from '../components/Avatar';
-import { blobToDataURL } from '../utils';
-import { socketService } from '../services/socketService';
+import { AstronautData, SymptomLog, DoctorAdvice, MissionProcedure, MassProtocol, EarthlinkMessage } from '../types.ts';
+import { maitriApiService } from '../services/maitriApiService.ts';
+import Avatar from '../components/Avatar.tsx';
+import { blobToDataURL } from '../utils.ts';
+import { socketService } from '../services/socketService.ts';
 
 interface AdminDashboardScreenProps {
     onLogout: () => void;
 }
 
-const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout }) => {
+// Fix: Changed to a named export to resolve a potential module resolution issue.
+export const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout }) => {
     const [astronauts, setAstronauts] = useState<AstronautData[]>([]);
     const [selectedAstronaut, setSelectedAstronaut] = useState<AstronautData | null>(null);
     const [activeTab, setActiveTab] = useState('symptoms');
@@ -309,45 +310,42 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
                                                             </div>
                                                             {msg.text && <p className="mt-2 text-sm">{msg.text}</p>}
                                                             {msg.photoUrl && <a href={msg.photoUrl} target="_blank" rel="noopener noreferrer"><img src={msg.photoUrl} alt="earthlink" className="mt-2 rounded max-h-32 hover:opacity-80 transition-opacity" /></a>}
-                                                            {msg.videoUrl && <video src={msg.videoUrl} controls className="mt-2 rounded max-h-48 w-full" />}
+                                                            {msg.videoUrl && <video src={msg.videoUrl} controls className="mt-2 rounded-lg max-h-40" />}
                                                         </div>
-                                                    );
-                                                }) 
-                                            : <p className="text-gray-500 italic text-center py-4">No messages in the log.</p>
+                                                    )
+                                                })
+                                        : <p className="p-4 text-center text-gray-500">No Earthlink messages found.</p>
                                         }
                                     </div>
                                 </div>
                             </div>
                         )}
-                         {activeTab === 'profile' && (
+                        {activeTab === 'profile' && (
                             <div className="p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg space-y-4 max-w-md">
                                 <h3 className="text-xl font-bold">Update Profile Photo</h3>
-                                <div className="flex items-center space-x-4">
-                                    <Avatar name={selectedAstronaut.name} photoUrl={newPhotoPreview || selectedAstronaut.photoUrl} className="w-24 h-24 rounded-full text-4xl" />
-                                    <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 font-bold rounded-lg">Choose File</button>
-                                    <input type="file" ref={fileInputRef} onChange={handlePhotoFileChange} accept="image/*" className="hidden"/>
-                                </div>
-                                {newPhotoPreview && <button onClick={handlePhotoUpdate} disabled={isSubmitting} className="px-4 py-2 bg-accent-cyan text-white font-bold rounded-lg disabled:bg-gray-500">{isSubmitting ? "Saving..." : "Save Photo"}</button>}
+                                <input type="file" ref={fileInputRef} onChange={handlePhotoFileChange} accept="image/*" className="w-full text-sm"/>
+                                {(newPhotoPreview || (selectedAstronaut && selectedAstronaut.photoUrl)) && (
+                                    <div className="mt-2">
+                                        <p className="text-sm mb-1">Preview:</p>
+                                        <img src={newPhotoPreview || selectedAstronaut.photoUrl || ''} alt="profile preview" className="rounded-lg max-h-48"/>
+                                    </div>
+                                )}
+                                {newPhotoPreview && <button onClick={handlePhotoUpdate} disabled={isSubmitting} className="px-4 py-2 bg-accent-cyan text-white font-bold rounded-lg disabled:bg-gray-500">{isSubmitting ? "Updating..." : "Update Photo"}</button>}
                             </div>
-                         )}
-
+                        )}
                     </div>
                 ) : (
-                    <div className="text-center p-16 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
-                        <h1 className="text-2xl font-bold text-gray-500">Select an astronaut to begin.</h1>
-                        <p className="text-gray-400 mt-2">No crew members found in the database.</p>
-                    </div>
+                    <div className="flex justify-center items-center h-full"><p>Select an astronaut from the roster to view their data.</p></div>
                 )}
             </main>
-            
-            {isReplyModalOpen && replyingToSymptom && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => setIsReplyModalOpen(false)}>
-                    <div className="p-6 bg-gray-100 dark:bg-space-dark rounded-lg w-11/12 max-w-lg" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-xl font-bold mb-4">Reply to: {replyingToSymptom.symptom}</h2>
-                        <textarea value={replyText} onChange={e => setReplyText(e.target.value)} rows={4} className="w-full p-2 bg-white dark:bg-gray-800 rounded-md"></textarea>
-                        <div className="flex justify-end space-x-2 mt-4">
+            {isReplyModalOpen && (
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setIsReplyModalOpen(false)}>
+                    <div className="bg-gray-100 dark:bg-space-dark p-6 rounded-lg shadow-lg w-full max-w-lg" onClick={e => e.stopPropagation()}>
+                        <h2 className="text-xl font-bold mb-4">Reply to {replyingToSymptom?.symptom}</h2>
+                        <textarea value={replyText} onChange={e => setReplyText(e.target.value)} rows={5} className="w-full p-2 bg-gray-200 dark:bg-gray-800 rounded-md mb-4"/>
+                        <div className="flex justify-end space-x-2">
                             <button onClick={() => setIsReplyModalOpen(false)} className="px-4 py-2 bg-gray-300 dark:bg-gray-600 rounded-lg">Cancel</button>
-                            <button onClick={handleReplySubmit} disabled={isSubmitting} className="px-4 py-2 bg-accent-cyan text-white rounded-lg disabled:bg-gray-500">{isSubmitting ? "Sending..." : "Send Reply"}</button>
+                            <button onClick={handleReplySubmit} disabled={isSubmitting} className="px-4 py-2 bg-accent-cyan text-white font-bold rounded-lg disabled:bg-gray-500">{isSubmitting ? "Sending..." : "Send Advice"}</button>
                         </div>
                     </div>
                 </div>
@@ -355,5 +353,3 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
         </div>
     );
 };
-
-export default AdminDashboardScreen;

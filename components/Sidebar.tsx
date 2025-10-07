@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Screen, MassProtocol } from '../types';
+import { Screen, MassProtocol } from '../types.ts';
 
 interface SidebarProps {
   currentScreen: Screen;

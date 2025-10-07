@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, FunctionDeclaration, Type, Blob } from '@google/genai';
-import { Screen, SymptomLog, MissionTask } from '../types';
-import { encode, decode, decodeAudioData } from '../utils';
-import { generateCreativeTextWithColor, sendMessageToFamilyFunctionDeclaration, setSensoryImmersionFunctionDeclaration } from '../services/geminiService';
+import { Screen, SymptomLog, MissionTask } from '../types.ts';
+import { encode, decode, decodeAudioData } from '../utils.ts';
+import { generateCreativeTextWithColor, sendMessageToFamilyFunctionDeclaration, setSensoryImmersionFunctionDeclaration } from '../services/geminiService.ts';
 
 
 interface VoiceAssistantModalProps {
@@ -23,7 +23,10 @@ interface TranscriptLine {
   text: string;
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Fallback to an empty string if the API key is not provided in the environment.
+// This prevents the constructor from throwing an error and crashing the app on load.
+const API_KEY = process.env.API_KEY || '';
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const SILENCE_THRESHOLD = 0.0025; // Lowered threshold for more sensitive voice detection
 

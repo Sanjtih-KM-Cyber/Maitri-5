@@ -1,12 +1,13 @@
 
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Screen, SymptomLog, DoctorAdvice, DailyCheckInLog, MassProtocol } from '../types';
-import GlassCard from '../components/GlassCard';
-import WellnessDashboard from '../components/WellnessDashboard';
-import BreathingExercise from '../components/BreathingExercise';
-import { blobToDataURL } from '../utils';
+import { Screen, SymptomLog, DoctorAdvice, DailyCheckInLog, MassProtocol } from '../types.ts';
+import GlassCard from '../components/GlassCard.tsx';
+import WellnessDashboard from '../components/WellnessDashboard.tsx';
+import BreathingExercise from '../components/BreathingExercise.tsx';
+import { blobToDataURL } from '../utils.ts';
 // Fix: Import maitriApiService from the correct file and use the correct service name.
-import { maitriApiService } from '../services/maitriApiService';
+import { maitriApiService } from '../services/maitriApiService.ts';
 
 interface GuardianScreenProps {
   navigateTo: (screen: Screen) => void;

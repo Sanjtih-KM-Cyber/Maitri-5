@@ -1,8 +1,8 @@
 
 import React, { useEffect } from 'react';
-import { EarthlinkMessage } from '../types';
+import { EarthlinkMessage } from '../types.ts';
 // Fix: Import maitriApiService from the correct file and use the correct service name.
-import { maitriApiService } from '../services/maitriApiService';
+import { maitriApiService } from '../services/maitriApiService.ts';
 
 interface EarthlinkModalProps {
   isOpen: boolean;

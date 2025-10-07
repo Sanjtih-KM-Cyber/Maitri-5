@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Add Babel Standalone for in-browser JSX/TSX transpilation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -15,7 +17,6 @@
         extend: {
           colors: {
             'space-dark': '#0c1a3e',
-            'accent-cyan': 'var(--accent-color, #06b6d4)',
           },
           fontFamily: {
              sans: ['Inter', 'sans-serif'],
@@ -92,6 +93,20 @@
         border-color: #1f2937;
     }
   </style>
+  <style>
+    /* Custom utility classes for dynamic accent color.
+       This is a workaround for a potential parsing issue with CSS variables
+       in the Tailwind JIT configuration. */
+    .bg-accent-cyan { background-color: var(--accent-color, #06b6d4); }
+    .text-accent-cyan { color: var(--accent-color, #06b6d4); }
+    .border-accent-cyan { border-color: var(--accent-color, #06b6d4); }
+    .hover\:bg-accent-cyan:hover { background-color: var(--accent-color, #06b6d4); }
+    .hover\:text-accent-cyan:hover { color: var(--accent-color, #06b6d4); }
+    .hover\:border-accent-cyan:hover { border-color: var(--accent-color, #06b6d4); }
+    .focus\:border-accent-cyan:focus { border-color: var(--accent-color, #06b6d4); }
+    /* For focus rings, Tailwind sets a CSS variable. We can hook into that. */
+    .focus\:ring-accent-cyan:focus { --tw-ring-color: var(--accent-color, #06b6d4); }
+  </style>
 </head>
 <body>
   <div id="root"></div>
@@ -105,20 +120,21 @@
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.22.0",
     "date-fns": "https://aistudiocdn.com/date-fns@^4.1.0",
     "socket.io-client": "https://aistudiocdn.com/socket.io-client@^4.7.5",
-    "express": "https://aistudiocdn.com/express@^5.1.0",
-    "cors": "https://aistudiocdn.com/cors@^2.8.5",
-    "bcryptjs": "https://aistudiocdn.com/bcryptjs@^3.0.2",
-    "jsonwebtoken": "https://aistudiocdn.com/jsonwebtoken@^9.0.2",
     "process": "https://aistudiocdn.com/process@^0.11.10",
-    "mongoose": "https://aistudiocdn.com/mongoose@^8.19.1",
-    "dotenv": "https://aistudiocdn.com/dotenv@^17.2.3",
+    "express": "https://aistudiocdn.com/express@^5.1.0",
     "http": "https://aistudiocdn.com/http@^0.0.1-security",
     "socket.io": "https://aistudiocdn.com/socket.io@^4.8.1",
-    "path": "https://aistudiocdn.com/path@^0.12.7"
+    "cors": "https://aistudiocdn.com/cors@^2.8.5",
+    "dotenv": "https://aistudiocdn.com/dotenv@^17.2.3",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "mongoose": "https://aistudiocdn.com/mongoose@^8.19.1",
+    "bcryptjs": "https://aistudiocdn.com/bcryptjs@^3.0.2",
+    "jsonwebtoken": "https://aistudiocdn.com/jsonwebtoken@^9.0.2"
   }
 }
 </script>
-  <script type="module" src="/index.tsx"></script>
+  <!-- Change script type to text/babel and add data-type to preserve module functionality -->
+  <script type="text/babel" data-type="module" src="/index.tsx"></script>
 
 </body>
 </html>

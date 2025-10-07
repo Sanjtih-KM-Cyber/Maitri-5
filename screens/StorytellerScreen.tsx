@@ -1,9 +1,10 @@
 
+
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Screen, CaptainLog } from '../types';
-import GlassCard from '../components/GlassCard';
-import { generateCreativeText } from '../services/geminiService';
-import { blobToDataURL } from '../utils';
+import { Screen, CaptainLog } from '../types.ts';
+import GlassCard from '../components/GlassCard.tsx';
+import { generateCreativeText } from '../services/geminiService.ts';
+import { blobToDataURL } from '../utils.ts';
 
 interface StorytellerScreenProps {
   navigateTo: (screen: Screen, context?: any) => void;

@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Screen, ChatMessage, SymptomLog, MissionTask } from '../types';
-import { useChatHistory } from '../hooks/useChatHistory';
-import { generateChatResponseWithTools, generateCreativeTextWithColor } from '../services/geminiService';
-import { useTTS } from '../hooks/useTTS';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
-import GlassCard from '../components/GlassCard';
+import { Screen, ChatMessage, SymptomLog, MissionTask } from '../types.ts';
+import { useChatHistory } from '../hooks/useChatHistory.ts';
+import { generateChatResponseWithTools, generateCreativeTextWithColor } from '../services/geminiService.ts';
+import { useTTS } from '../hooks/useTTS.ts';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition.ts';
+import GlassCard from '../components/GlassCard.tsx';
 // Fix: Import maitriApiService from the correct file and use the correct service name.
-import { maitriApiService } from '../services/maitriApiService';
+import { maitriApiService } from '../services/maitriApiService.ts';
 
 interface ChatScreenProps {
   navigateTo: (screen: Screen, context?: any) => void;

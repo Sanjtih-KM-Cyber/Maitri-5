@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Screen, MissionTask, MissionProcedure } from '../types';
-import GlassCard from '../components/GlassCard';
-import { useTTS } from '../hooks/useTTS';
-import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
+import { Screen, MissionTask, MissionProcedure } from '../types.ts';
+import GlassCard from '../components/GlassCard.tsx';
+import { useTTS } from '../hooks/useTTS.ts';
+import { useSpeechRecognition } from '../hooks/useSpeechRecognition.ts';
 
 // --- Interactive Procedure Assistant Component ---
 interface ProcedureRunnerModalProps {

@@ -14,16 +14,16 @@
     "@google/genai": "^1.22.0",
     "date-fns": "^4.1.0",
     "socket.io-client": "^4.7.5",
-    "express": "^5.1.0",
-    "cors": "^2.8.5",
-    "bcryptjs": "^3.0.2",
-    "jsonwebtoken": "^9.0.2",
     "process": "^0.11.10",
-    "mongoose": "^8.19.1",
-    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
     "http": "^0.0.1-security",
     "socket.io": "^4.8.1",
-    "path": "^0.12.7"
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "path": "^0.12.7",
+    "mongoose": "^8.19.1",
+    "bcryptjs": "^3.0.2",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

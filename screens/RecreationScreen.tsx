@@ -1,8 +1,9 @@
 
+
 import React, { useState } from 'react';
-import { Screen } from '../types';
-import GlassCard from '../components/GlassCard';
-import { generateCreativeText } from '../services/geminiService';
+import { Screen } from '../types.ts';
+import GlassCard from '../components/GlassCard.tsx';
+import { generateCreativeText } from '../services/geminiService.ts';
 
 interface RecreationScreenProps {
   navigateTo: (screen: Screen, context?: any) => void;

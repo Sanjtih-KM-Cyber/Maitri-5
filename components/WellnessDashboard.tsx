@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import GlassCard from './GlassCard';
-import { DailyCheckInLog, SymptomLog, Mood } from '../types';
+import GlassCard from './GlassCard.tsx';
+import { DailyCheckInLog, SymptomLog, Mood } from '../types.ts';
 import { subDays, format, isWithinInterval, eachDayOfInterval, parseISO } from 'date-fns';
 
 interface WellnessDashboardProps {

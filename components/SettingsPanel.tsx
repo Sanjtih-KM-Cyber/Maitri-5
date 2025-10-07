@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import ChangePasswordModal from './ChangePasswordModal';
-import ChangeSecurityQuestionModal from './ChangeSecurityQuestionModal';
+import ChangePasswordModal from './ChangePasswordModal.tsx';
+import ChangeSecurityQuestionModal from './ChangeSecurityQuestionModal.tsx';
 
 interface SettingsPanelProps {
   isOpen: boolean;

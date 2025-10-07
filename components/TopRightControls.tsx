@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ThemeContext } from '../contexts/ThemeContext';
+import { ThemeContext } from '../contexts/ThemeContext.ts';
 
 interface TopRightControlsProps {
     onOpenSettings: () => void;

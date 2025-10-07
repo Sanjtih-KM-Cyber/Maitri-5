@@ -1,32 +1,43 @@
+
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Screen, AstronautData, UserData, UserType, SymptomLog, CaptainLog, Mood, SleepQuality, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, ChatMessage } from './types';
-import { ThemeContext, Theme } from './contexts/ThemeContext';
-import { maitriApiService } from './services/maitriApiService';
-import { getToken, removeToken } from './services/apiService';
+import { Screen, AstronautData, UserData, UserType, SymptomLog, CaptainLog, Mood, SleepQuality, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, ChatMessage } from './types.ts';
+import { ThemeContext, Theme } from './contexts/ThemeContext.ts';
+import { maitriApiService } from './services/maitriApiService.ts';
+import { getToken, removeToken } from './services/apiService.ts';
 
 // Screens
-import HomeScreen from './screens/HomeScreen';
-import GuardianScreen from './screens/GuardianScreen';
-import CoPilotScreen from './screens/CoPilotScreen';
-import StorytellerScreen from './screens/StorytellerScreen';
-import ChatScreen from './screens/ChatScreen';
-import LandingScreen from './screens/LandingScreen';
-import AuthScreen from './screens/AuthScreen';
-import AdminDashboardScreen from './screens/AdminDashboardScreen';
+import HomeScreen from './screens/HomeScreen.tsx';
+import GuardianScreen from './screens/GuardianScreen.tsx';
+import CoPilotScreen from './screens/CoPilotScreen.tsx';
+import StorytellerScreen from './screens/StorytellerScreen.tsx';
+import ChatScreen from './screens/ChatScreen.tsx';
+import LandingScreen from './screens/LandingScreen.tsx';
+import AuthScreen from './screens/AuthScreen.tsx';
+// Fix: Changed to a named import to match the updated export in AdminDashboardScreen.
+import { AdminDashboardScreen } from './screens/AdminDashboardScreen.tsx';
 
 // Components
-import Sidebar from './components/Sidebar';
-import SettingsPanel from './components/SettingsPanel';
-import ProfileModal from './components/ProfileModal';
-import TopRightControls from './components/TopRightControls';
-import WorkoutTimer from './components/WorkoutTimer';
-import VoiceAssistantModal from './components/VoiceAssistantModal';
+import Sidebar from './components/Sidebar.tsx';
+import SettingsPanel from './components/SettingsPanel.tsx';
+import ProfileModal from './components/ProfileModal.tsx';
+import TopRightControls from './components/TopRightControls.tsx';
+import WorkoutTimer from './components/WorkoutTimer.tsx';
+import VoiceAssistantModal from './components/VoiceAssistantModal.tsx';
 
 // Hooks
-import { useTTS } from './hooks/useTTS';
+import { useTTS } from './hooks/useTTS.ts';
+
+// Define props interface for Toast component
+interface ToastProps {
+  message: string;
+  show: boolean;
+  onDismiss: () => void;
+  type?: 'alert' | 'error';
+}
 
 // Toast component for mission alerts and errors
-const Toast: React.FC<{ message: string; show: boolean; onDismiss: () => void; type?: 'alert' | 'error' }> = ({ message, show, onDismiss, type = 'alert' }) => {
+const Toast: React.FC<ToastProps> = ({ message, show, onDismiss, type = 'alert' }) => {
     useEffect(() => {
         if (show) {
             const timer = setTimeout(onDismiss, 5000);

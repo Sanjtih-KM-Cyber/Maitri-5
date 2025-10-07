@@ -11,7 +11,7 @@ const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', onClick
   return (
     <div
       onClick={onClick}
-      className={`bg-gray-200/30 dark:bg-slate-500/10 backdrop-blur-lg rounded-2xl border border-gray-300/50 dark:border-slate-500/20 shadow-lg transition-all duration-300 hover:border-accent-cyan/80 dark:hover:border-accent-cyan/50 ${onClick ? 'cursor-pointer hover:shadow-cyan-500/20' : ''} ${className}`}
+      className={`bg-gray-200/30 dark:bg-slate-500/10 backdrop-blur-lg rounded-2xl border border-gray-300/50 dark:border-slate-500/20 shadow-lg transition-all duration-300 hover:border-accent-cyan ${onClick ? 'cursor-pointer hover:shadow-cyan-500/20' : ''} ${className}`}
     >
       {children}
     </div>

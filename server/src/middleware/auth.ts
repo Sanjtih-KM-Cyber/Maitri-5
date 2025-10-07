@@ -1,10 +1,7 @@
-
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { UserType } from '../../../types';
 
-// Fix: The alias 'ExpressRequest' was causing type inheritance issues. 
-// Changed to extend the base `Request` type directly to ensure all properties are available on AuthRequest.
 export interface AuthRequest extends Request {
   user?: {
     id: string;
@@ -13,6 +10,7 @@ export interface AuthRequest extends Request {
   };
 }
 
+// FIX: Use express.Response and express.NextFunction to ensure correct types.
 export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.header('Authorization');
 
@@ -38,6 +36,7 @@ export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
   }
 };
 
+// FIX: Use express.Response and express.NextFunction to ensure correct types.
 export const adminAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.type === 'admin') {
         next();

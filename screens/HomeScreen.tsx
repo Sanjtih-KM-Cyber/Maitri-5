@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Screen, AstronautData, Mood, SleepQuality, MissionTask, EarthlinkMessage } from '../types';
-import DailyBriefing from '../components/DailyBriefing';
-import EarthlinkStatus from '../components/EarthlinkStatus';
-import DailyCheckIn from '../components/DailyCheckIn';
-import EarthlinkModal from '../components/EarthlinkModal';
-import GlassCard from '../components/GlassCard';
-import MissionForTheDay from '../components/MissionForTheDay';
+import { Screen, AstronautData, Mood, SleepQuality, MissionTask, EarthlinkMessage } from '../types.ts';
+import DailyBriefing from '../components/DailyBriefing.tsx';
+import EarthlinkStatus from '../components/EarthlinkStatus.tsx';
+import DailyCheckIn from '../components/DailyCheckIn.tsx';
+import EarthlinkModal from '../components/EarthlinkModal.tsx';
+import GlassCard from '../components/GlassCard.tsx';
+import MissionForTheDay from '../components/MissionForTheDay.tsx';
 
 interface HomeScreenProps {
   navigateTo: (screen: Screen, context?: any) => void;

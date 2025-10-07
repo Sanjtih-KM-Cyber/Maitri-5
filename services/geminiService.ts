@@ -1,7 +1,10 @@
 import { GoogleGenAI, Type, GenerateContentResponse, FunctionDeclaration } from "@google/genai";
-import { ChatMessage, Screen, SymptomLog, MissionTask } from "../types";
+import { ChatMessage, Screen, SymptomLog, MissionTask } from "../types.ts";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Fallback to an empty string if the API key is not provided in the environment.
+// This prevents the constructor from throwing an error and crashing the app on load.
+const API_KEY = process.env.API_KEY || '';
+const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // --- Function Declarations for Tools ---
 const navigateToScreenFunctionDeclaration: FunctionDeclaration = {

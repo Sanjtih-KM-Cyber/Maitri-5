@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Screen, ChatMessage, SymptomLog, MissionTask } from '../types';
 import { useChatHistory } from '../hooks/useChatHistory';
-import { generateChatResponseWithTools, generateCreativeTextWithColor, functionDeclarations } from '../services/geminiService';
+import { generateChatResponseWithTools, generateCreativeTextWithColor } from '../services/geminiService';
 import { useTTS } from '../hooks/useTTS';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition';
 import GlassCard from '../components/GlassCard';
+// Fix: Import maitriApiService from the correct file and use the correct service name.
+import { maitriApiService } from '../services/maitriApiService';
 
 interface ChatScreenProps {
   navigateTo: (screen: Screen, context?: any) => void;
@@ -83,11 +85,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { messages, addMessage } = useChatHistory(astronautName);
-  const { speak } = useTTS();
+  const { speak, cancel: cancelTTS } = useTTS();
   const { isListening, transcript, startListening, stopListening, hasRecognitionSupport } = useSpeechRecognition();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initialMessageSent = useRef(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const preSpeechInputRef = useRef('');
 
 
   useEffect(() => {
@@ -95,13 +98,15 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   }, [messages]);
   
   useEffect(() => {
-    if (transcript) {
-        setInput(prev => prev + transcript);
+    if (isListening) {
+        const baseText = preSpeechInputRef.current ? preSpeechInputRef.current + ' ' : '';
+        setInput(baseText + transcript);
     }
-  }, [transcript]);
+  }, [transcript, isListening]);
 
   const handleSend = useCallback(async (textToSend?: string) => {
     const messageText = (textToSend || input).trim();
+    if (isListening) stopListening();
     if (!messageText || isLoading) return;
 
     setInput('');
@@ -162,6 +167,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
             } else if (fc.name === 'addMissionTask' && fc.args.time && fc.args.name) {
                 await onAddTask({ time: fc.args.time, name: fc.args.name });
                 confirmationText = `I've added "${fc.args.name}" to your schedule at ${fc.args.time}.`;
+            } else if (fc.name === 'sendMessageToFamily' && fc.args.messageContent) {
+                 await maitriApiService.addEarthlinkMessageFromAstronaut({
+                    from: astronautName,
+                    text: fc.args.messageContent,
+                });
+                confirmationText = `I've logged your message for the Base Station archives and sent it to Earthlink.`;
             }
             const systemMessage: ChatMessage = { id: `sys-${Date.now()}`, text: confirmationText, sender: 'system', timestamp: new Date().toISOString() };
             addMessage(systemMessage);
@@ -191,7 +202,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, addMessage, isTtsEnabled, speak, ttsVoice, messages, onSensoryColorChange, navigateTo, replyTo, astronautName, onSymptomLog, onAddTask]);
+  }, [input, isLoading, addMessage, isTtsEnabled, speak, ttsVoice, messages, onSensoryColorChange, navigateTo, replyTo, astronautName, onSymptomLog, onAddTask, stopListening, isListening]);
   
   useEffect(() => {
     if (initialMessage && !initialMessageSent.current) {
@@ -201,10 +212,11 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
   }, [initialMessage, handleSend]);
   
   const handleMicClick = () => {
+    cancelTTS();
     if (isListening) {
       stopListening();
     } else {
-      setInput('');
+      preSpeechInputRef.current = input;
       startListening();
     }
   };

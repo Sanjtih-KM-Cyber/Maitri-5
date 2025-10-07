@@ -1,17 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { AstronautData, SymptomLog, DoctorAdvice, MissionProcedure, MassProtocol, EarthlinkMessage } from '../types';
-import { maitriService } from '../services/databaseService';
+import { maitriApiService } from '../services/maitriApiService';
 import Avatar from '../components/Avatar';
-
-const blobToDataURL = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-    });
-};
+import { blobToDataURL } from '../utils';
+import { socketService } from '../services/socketService';
 
 interface AdminDashboardScreenProps {
     onLogout: () => void;
@@ -27,7 +19,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
     const fetchAllData = async () => {
         setIsLoading(true);
         try {
-            const allAstronauts = await maitriService.getAllAstronauts();
+            const allAstronauts = await maitriApiService.getAllAstronauts();
             setAstronauts(allAstronauts);
             if (!selectedAstronaut && allAstronauts.length > 0) {
                 setSelectedAstronaut(allAstronauts[0]);
@@ -38,7 +30,6 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
             }
         } catch (error) {
             console.error("Failed to fetch astronaut data:", error);
-            // Handle error display
         } finally {
             setIsLoading(false);
         }
@@ -47,6 +38,26 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
     useEffect(() => {
         fetchAllData();
     }, []);
+
+    useEffect(() => {
+        socketService.connect();
+        
+        socketService.on('astronaut-data-updated', (updatedAstronaut: AstronautData) => {
+            setAstronauts(prevAstronauts => 
+                prevAstronauts.map(astro => 
+                    astro.name === updatedAstronaut.name ? updatedAstronaut : astro
+                )
+            );
+            
+            if (selectedAstronaut?.name === updatedAstronaut.name) {
+                setSelectedAstronaut(updatedAstronaut);
+            }
+        });
+
+        return () => {
+            socketService.disconnect();
+        };
+    }, [selectedAstronaut]);
     
     // Reply Modal State
     const [isReplyModalOpen, setIsReplyModalOpen] = useState(false);
@@ -84,11 +95,11 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
         if (!replyText || !replyingToSymptom || !selectedAstronaut) return;
         setIsSubmitting(true);
         try {
-            await maitriService.addDoctorAdvice(selectedAstronaut.name, {
+            await maitriApiService.addDoctorAdvice(selectedAstronaut.name, {
                 text: replyText,
                 symptomLogId: replyingToSymptom.id,
             });
-            await fetchAllData(); // Refresh all data
+            // Data will refresh via socket event, no need to call fetchAllData
             setReplyText('');
             setIsReplyModalOpen(false);
             setReplyingToSymptom(null);
@@ -101,8 +112,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
         if (!procName || procSteps.some(s => !s.text) || !selectedAstronaut) return;
         setIsSubmitting(true);
         try {
-            await maitriService.assignProcedure(selectedAstronaut.name, { name: procName, steps: procSteps });
-            await fetchAllData();
+            await maitriApiService.assignProcedure(selectedAstronaut.name, { name: procName, steps: procSteps });
             setProcName('');
             setProcSteps([{ id: `step-${Date.now()}`, text: '' }]);
         } catch (error) { console.error("Failed to assign procedure:", error); }
@@ -114,8 +124,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
         if (!massName || !selectedAstronaut) return;
         setIsSubmitting(true);
         try {
-            await maitriService.assignMassProtocol(selectedAstronaut.name, { name: massName, sets: massSets, duration: massDuration, rest: massRest });
-            await fetchAllData();
+            await maitriApiService.assignMassProtocol(selectedAstronaut.name, { name: massName, sets: massSets, duration: massDuration, rest: massRest });
             setMassName('');
         } catch (error) { console.error("Failed to assign MASS protocol:", error); }
         finally { setIsSubmitting(false); }
@@ -133,8 +142,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
         if(newPhotoPreview && selectedAstronaut) {
             setIsSubmitting(true);
             try {
-                await maitriService.updateAstronautPhoto(selectedAstronaut.name, newPhotoPreview);
-                await fetchAllData();
+                await maitriApiService.updateAstronautPhoto(selectedAstronaut.name, newPhotoPreview);
                 setNewPhotoPreview(null);
             } catch(error) { console.error("Failed to update photo:", error); }
             finally { setIsSubmitting(false); }
@@ -162,8 +170,7 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
                 ...(earthlinkPhoto && { photoUrl: earthlinkPhoto }),
                 ...(earthlinkVideo && { videoUrl: earthlinkVideo }),
             };
-            await maitriService.sendEarthlinkMessage(selectedAstronaut.name, message);
-            await fetchAllData();
+            await maitriApiService.sendEarthlinkMessage(selectedAstronaut.name, message);
             // Reset form
             setEarthlinkFrom('Mission Control');
             setEarthlinkText('');
@@ -225,9 +232,9 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
                                                 <p className="font-bold">{log.symptom} <span className="font-normal text-sm capitalize">({log.severity})</span></p>
                                                 <p className="text-xs text-gray-500">{new Date(log.date).toLocaleString()}</p>
                                                 {log.notes && <p className="mt-2 text-sm italic">"{log.notes}"</p>}
-                                                <div className="flex space-x-4 mt-2">
-                                                    {log.photo && <a href={log.photo} target="_blank" rel="noopener noreferrer" className="text-accent-cyan text-sm font-semibold">View Photo</a>}
-                                                    {log.video && <a href={log.video} target="_blank" rel="noopener noreferrer" className="text-accent-cyan text-sm font-semibold">View Video</a>}
+                                                <div className="flex items-start space-x-4 mt-2">
+                                                    {log.photo && <img src={log.photo} alt="Symptom" className="max-h-40 rounded-lg" />}
+                                                    {log.video && <video src={log.video} controls className="max-h-40 rounded-lg w-60" />}
                                                 </div>
                                             </div>
                                             <button onClick={() => { setReplyingToSymptom(log); setIsReplyModalOpen(true); }} className="px-3 py-1 bg-accent-cyan text-white text-sm font-bold rounded-lg flex-shrink-0">Reply</button>
@@ -274,16 +281,43 @@ const AdminDashboardScreen: React.FC<AdminDashboardScreenProps> = ({ onLogout })
                             </form>
                         )}
                         {activeTab === 'earthlink' && (
-                             <form onSubmit={handleEarthlinkSubmit} className="p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg space-y-4 max-w-lg">
-                                <h3 className="text-xl font-bold">Send Earthlink Message</h3>
-                                <div><label className="text-sm">From</label><input type="text" value={earthlinkFrom} onChange={e => setEarthlinkFrom(e.target.value)} placeholder="e.g., Mission Control" required className="w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md"/></div>
-                                <div><label className="text-sm">Message</label><textarea value={earthlinkText} onChange={e => setEarthlinkText(e.target.value)} rows={4} placeholder="Type your message here..." className="w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md"/></div>
-                                <div className="flex space-x-4">
-                                    <div className="flex-1"><label className="text-sm">Attach Photo</label><input type="file" onChange={(e) => handleEarthlinkFileChange(e, 'photo')} accept="image/*" className="w-full text-sm"/>{earthlinkPhoto && <img src={earthlinkPhoto} className="mt-2 rounded max-h-24"/>}</div>
-                                    <div className="flex-1"><label className="text-sm">Attach Video</label><input type="file" onChange={(e) => handleEarthlinkFileChange(e, 'video')} accept="video/*" className="w-full text-sm"/>{earthlinkVideo && <video src={earthlinkVideo} controls className="mt-2 rounded max-h-24"/>}</div>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                                <form onSubmit={handleEarthlinkSubmit} className="p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg space-y-4">
+                                    <h3 className="text-xl font-bold">Send Earthlink Message</h3>
+                                    <div><label className="text-sm">From</label><input type="text" value={earthlinkFrom} onChange={e => setEarthlinkFrom(e.target.value)} placeholder="e.g., Mission Control" required className="w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md"/></div>
+                                    <div><label className="text-sm">Message</label><textarea value={earthlinkText} onChange={e => setEarthlinkText(e.target.value)} rows={4} placeholder="Type your message here..." className="w-full p-2 bg-gray-100 dark:bg-gray-700 rounded-md"/></div>
+                                    <div className="flex space-x-4">
+                                        <div className="flex-1"><label className="text-sm">Attach Photo</label><input type="file" onChange={(e) => handleEarthlinkFileChange(e, 'photo')} accept="image/*" className="w-full text-sm"/>{earthlinkPhoto && <img src={earthlinkPhoto} alt="upload preview" className="mt-2 rounded max-h-24"/>}</div>
+                                        <div className="flex-1"><label className="text-sm">Attach Video</label><input type="file" onChange={(e) => handleEarthlinkFileChange(e, 'video')} accept="video/*" className="w-full text-sm"/>{earthlinkVideo && <video src={earthlinkVideo} controls className="mt-2 rounded max-h-24"/>}</div>
+                                    </div>
+                                    <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-accent-cyan text-white font-bold rounded-lg disabled:bg-gray-500">{isSubmitting ? "Sending..." : "Send Message"}</button>
+                                </form>
+
+                                <div className="p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
+                                    <h3 className="text-xl font-bold mb-4">Earthlink Log</h3>
+                                    <div className="space-y-3 max-h-[65vh] overflow-y-auto scrollbar-thin pr-2">
+                                        {selectedAstronaut.earthlinkMessages && selectedAstronaut.earthlinkMessages.length > 0 ? 
+                                            [...selectedAstronaut.earthlinkMessages]
+                                                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                                .map(msg => {
+                                                    const isFromAstronaut = msg.from.toLowerCase() === selectedAstronaut.name.toLowerCase();
+                                                    return (
+                                                        <div key={msg.id} className={`p-3 rounded-lg ${isFromAstronaut ? 'bg-cyan-500/10 border-l-2 border-cyan-400' : 'bg-gray-500/10 border-l-2 border-gray-400'}`}>
+                                                            <div className="flex justify-between items-center">
+                                                                <p className="font-bold text-sm capitalize">{msg.from}</p>
+                                                                <p className="text-xs text-gray-500">{new Date(msg.date).toLocaleString()}</p>
+                                                            </div>
+                                                            {msg.text && <p className="mt-2 text-sm">{msg.text}</p>}
+                                                            {msg.photoUrl && <a href={msg.photoUrl} target="_blank" rel="noopener noreferrer"><img src={msg.photoUrl} alt="earthlink" className="mt-2 rounded max-h-32 hover:opacity-80 transition-opacity" /></a>}
+                                                            {msg.videoUrl && <video src={msg.videoUrl} controls className="mt-2 rounded max-h-48 w-full" />}
+                                                        </div>
+                                                    );
+                                                }) 
+                                            : <p className="text-gray-500 italic text-center py-4">No messages in the log.</p>
+                                        }
+                                    </div>
                                 </div>
-                                <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-accent-cyan text-white font-bold rounded-lg disabled:bg-gray-500">{isSubmitting ? "Sending..." : "Send Message"}</button>
-                             </form>
+                            </div>
                         )}
                          {activeTab === 'profile' && (
                             <div className="p-4 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg space-y-4 max-w-md">

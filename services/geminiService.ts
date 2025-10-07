@@ -46,10 +46,42 @@ const addMissionTaskFunctionDeclaration: FunctionDeclaration = {
     }
 };
 
+export const sendMessageToFamilyFunctionDeclaration: FunctionDeclaration = {
+    name: 'sendMessageToFamily',
+    parameters: {
+        type: Type.OBJECT,
+        description: 'Sends a pre-drafted message to the astronaut\'s family via the Earthlink system.',
+        properties: {
+            messageContent: {
+                type: Type.STRING,
+                description: 'The final, approved content of the message to be sent.'
+            },
+        },
+        required: ['messageContent'],
+    },
+};
+
+export const setSensoryImmersionFunctionDeclaration: FunctionDeclaration = {
+  name: 'setSensoryImmersion',
+  parameters: {
+    type: Type.OBJECT,
+    description: "Generates a sensory experience by changing the UI's ambient lighting and describing a scene.",
+    properties: {
+      prompt: {
+        type: Type.STRING,
+        description: 'A short text prompt describing the desired scene, e.g., "a calm green forest" or "a vibrant coral reef".',
+      },
+    },
+    required: ['prompt'],
+  },
+};
+
+
 export const functionDeclarations = [
     navigateToScreenFunctionDeclaration,
     logSymptomFunctionDeclaration,
     addMissionTaskFunctionDeclaration,
+    sendMessageToFamilyFunctionDeclaration,
 ];
 
 // --- Adaptive Persona System ---
@@ -59,7 +91,7 @@ const getPersona = (history: ChatMessage[]): Persona => {
     const lastUserMessage = history.filter(m => m.sender === 'user').pop()?.text.toLowerCase() || '';
     if (lastUserMessage.includes('symptom') || lastUserMessage.includes('sick') || lastUserMessage.includes('stressed') || lastUserMessage.includes('anxious') || lastUserMessage.includes('headache')) return 'Guardian';
     if (lastUserMessage.includes('mission') || lastUserMessage.includes('schedule') || lastUserMessage.includes('task') || lastUserMessage.includes('procedure')) return 'CoPilot';
-    if (lastUserMessage.includes('log') || lastUserMessage.includes('diary') || lastUserMessage.includes('message home')) return 'Storyteller';
+    if (lastUserMessage.includes('log') || lastUserMessage.includes('diary') || lastUserMessage.includes('message home') || lastUserMessage.includes('send it')) return 'Storyteller';
     if (lastUserMessage.includes('game') || lastUserMessage.includes('bored') || lastUserMessage.includes('story')) return 'Recreation';
     return 'Default';
 };
@@ -73,7 +105,7 @@ const getSystemInstruction = (persona: Persona, astronautName: string): string =
         case 'CoPilot':
             return `${baseInstruction} Your current persona is The Co-Pilot. Your tone is professional, concise, and task-oriented. Prioritize accuracy and speed. All times are in 24-hour format. Confirm task additions or modifications clearly.`;
         case 'Storyteller':
-            return `${baseInstruction} Your current persona is The Storyteller. Your tone is warm, introspective, and thoughtful. Ask open-ended questions to encourage reflection. Your prime directive is to combat isolation and help the astronaut record their legacy.`;
+            return `${baseInstruction} Your current persona is The Storyteller. Your tone is warm, introspective, and thoughtful. You help the astronaut draft and send messages home to combat isolation. Ask open-ended questions to encourage reflection. Before sending a message, ALWAYS confirm the final draft with the user.`;
         case 'Recreation':
             return `${baseInstruction} Your current persona is The Recreation Officer. Your tone is creative, playful, and imaginative. Use descriptive, atmospheric language to engage the astronaut in games or stories.`;
         case 'Default':

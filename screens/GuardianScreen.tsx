@@ -5,7 +5,8 @@ import GlassCard from '../components/GlassCard';
 import WellnessDashboard from '../components/WellnessDashboard';
 import BreathingExercise from '../components/BreathingExercise';
 import { blobToDataURL } from '../utils';
-import { maitriService } from '../services/databaseService';
+// Fix: Import maitriApiService from the correct file and use the correct service name.
+import { maitriApiService } from '../services/maitriApiService';
 
 interface GuardianScreenProps {
   navigateTo: (screen: Screen) => void;
@@ -13,7 +14,7 @@ interface GuardianScreenProps {
   symptomLogs: SymptomLog[];
   doctorAdvice: DoctorAdvice[];
   dailyLogs: DailyCheckInLog[];
-  onSymptomLog: (log: Omit<SymptomLog, 'id' | 'date'>) => Promise<void>;
+  onSymptomLog: (log: Omit<SymptomLog, 'id' | 'date'>) => Promise<SymptomLog | null>;
   onToggleSleepSession: () => void;
   isSleepSessionActive: boolean;
   massProtocols: MassProtocol[];
@@ -50,19 +51,6 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
   const photoUrl = photo ? URL.createObjectURL(photo) : null;
   const videoUrl = video ? URL.createObjectURL(video) : null;
   
-  // Handle context from voice assistant
-  useEffect(() => {
-    if (screenContext?.openCameraForMostRecentLog) {
-        const mediaType = screenContext.openCameraForMostRecentLog as 'photo' | 'video';
-        const latestLog = [...symptomLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-        if (latestLog) {
-            setMediaContext({ logId: latestLog.id, mediaType });
-            openCamera(mediaType);
-        }
-    }
-  }, [screenContext, symptomLogs]);
-
-
   const openCamera = useCallback(async (mode: 'photo' | 'video') => {
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: mode === 'video' });
@@ -71,6 +59,28 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
         setIsCameraOpen(true);
     } catch (err) { console.error("Error accessing camera/mic:", err); }
   }, []);
+  
+  // Handle context from voice assistant or other navigation
+  useEffect(() => {
+    if (screenContext?.openCameraForLog) {
+        const { mediaType, logId } = screenContext.openCameraForLog;
+        // If an explicit logId is provided, use it. Otherwise, fall back to the most recent log.
+        const targetLogId = logId || [...symptomLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]?.id;
+        
+        if (targetLogId) {
+            setMediaContext({ logId: targetLogId, mediaType });
+            openCamera(mediaType);
+        }
+    }
+  }, [screenContext, symptomLogs, openCamera]);
+
+  // Cleanup effect to ensure camera stream is released on component unmount
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach(track => track.stop());
+    };
+  }, []);
+
   
   useEffect(() => {
     if (isCameraOpen && videoRef.current && streamRef.current) {
@@ -97,7 +107,7 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
             if(blob) {
                 if (mediaContext) {
                     const dataUrl = await blobToDataURL(blob);
-                    await maitriService.addMediaToSymptomLog(mediaContext.logId, dataUrl, 'photo');
+                    await maitriApiService.addMediaToSymptomLog(mediaContext.logId, dataUrl, 'photo');
                     onDataRefresh();
                 } else {
                     setPhoto(blob);
@@ -120,7 +130,7 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
             const videoBlob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
              if (mediaContext) {
                 const dataUrl = await blobToDataURL(videoBlob);
-                await maitriService.addMediaToSymptomLog(mediaContext.logId, dataUrl, 'video');
+                await maitriApiService.addMediaToSymptomLog(mediaContext.logId, dataUrl, 'video');
                 onDataRefresh();
             } else {
                 setVideo(videoBlob);
@@ -248,9 +258,9 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
               <div key={log.id} className="p-3 bg-gray-200/50 dark:bg-gray-800/50 rounded-lg">
                 <p className="font-semibold">{log.symptom} <span className="text-sm capitalize font-normal">({log.severity})</span> - <span className="text-xs text-gray-500">{new Date(log.date).toLocaleDateString()}</span></p>
                 {log.notes && <p className="text-sm italic mt-1">"{log.notes}"</p>}
-                <div className="flex space-x-4 mt-2">
-                    {log.photo && <a href={log.photo} target="_blank" rel="noopener noreferrer" className="text-accent-cyan text-sm font-semibold">View Photo</a>}
-                    {log.video && <a href={log.video} target="_blank" rel="noopener noreferrer" className="text-accent-cyan text-sm font-semibold">View Video</a>}
+                <div className="flex items-start space-x-4 mt-2">
+                    {log.photo && <img src={log.photo} alt="Symptom" className="max-h-24 rounded-lg" />}
+                    {log.video && <video src={log.video} controls className="max-h-24 rounded-lg w-40" />}
                 </div>
                 {getAdviceForLog(log.id) && (
                   <div className="mt-2 p-2 bg-green-500/10 rounded-md">

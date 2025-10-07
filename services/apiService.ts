@@ -1,12 +1,9 @@
 // services/apiService.ts
 
-// This would be in an environment variable in a real production app
-const API_BASE_URL = '/api/v1'; // Using a relative path for a proxy setup
-
+const API_BASE_URL = 'http://localhost:3001/api';
 const JWT_TOKEN_KEY = 'maitri_jwt';
 
 // --- JWT Management ---
-
 export const saveToken = (token: string): void => {
     localStorage.setItem(JWT_TOKEN_KEY, token);
 };
@@ -20,7 +17,6 @@ export const removeToken = (): void => {
 };
 
 // --- Core API Fetch Function ---
-
 const apiFetch = async <T>(
     endpoint: string,
     options: RequestInit = {}
@@ -38,17 +34,13 @@ const apiFetch = async <T>(
         headers,
     };
 
-    // NOTE: In this environment, `fetch` will not work as there is no backend.
-    // The code is structured correctly for a real environment, but will throw
-    // network errors here. This is expected. We are demonstrating the
-    // frontend architecture, not a live connection.
     try {
         const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
         if (!response.ok) {
             // Handle HTTP errors like 4xx, 5xx
-            const errorData = await response.json().catch(() => ({ message: 'An unknown error occurred' }));
-            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            const errorData = await response.json().catch(() => ({ message: `HTTP error! Status: ${response.status}` }));
+            throw new Error(errorData.message || `An unknown error occurred`);
         }
         
         // Handle cases with no response body (e.g., 204 No Content)
@@ -64,9 +56,7 @@ const apiFetch = async <T>(
     }
 };
 
-
 // --- Exported API Methods ---
-
 export const apiService = {
     get: <T>(endpoint: string, options?: RequestInit) =>
         apiFetch<T>(endpoint, { ...options, method: 'GET' }),

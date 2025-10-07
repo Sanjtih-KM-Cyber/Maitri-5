@@ -5,7 +5,6 @@ export enum Screen {
   Guardian = 'guardian',
   CoPilot = 'copilot',
   Storyteller = 'storyteller',
-  Recreation = 'recreation',
   Chat = 'chat',
   Admin = 'admin',
 }

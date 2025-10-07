@@ -1,7 +1,8 @@
 
 import React, { useEffect } from 'react';
 import { EarthlinkMessage } from '../types';
-import { maitriService } from '../services/databaseService';
+// Fix: Import maitriApiService from the correct file and use the correct service name.
+import { maitriApiService } from '../services/maitriApiService';
 
 interface EarthlinkModalProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ interface EarthlinkModalProps {
 const EarthlinkModal: React.FC<EarthlinkModalProps> = ({ isOpen, onClose, message, onMessageViewed }) => {
     useEffect(() => {
         if (isOpen && message) {
-            maitriService.markEarthlinkMessageAsViewed(message.id)
+            maitriApiService.markEarthlinkMessageAsViewed(message.id)
                 .then(() => {
                     onMessageViewed();
                 })

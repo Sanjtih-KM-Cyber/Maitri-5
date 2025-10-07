@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { dbService } from '../services/databaseService';
+import { maitriApiService } from '../services/maitriApiService';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -17,6 +16,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -29,6 +29,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
             setNewPassword('');
             setConfirmPassword('');
             setError('');
+            setIsLoading(false);
         }, 300); // delay to allow for closing animation
     }
   }, [isOpen]);
@@ -36,22 +37,37 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
   const handleNameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    const userQuestion = await dbService.getUserSecurityQuestion(name);
-    if (userQuestion) {
-      setQuestion(userQuestion);
-      setStep('answerQuestion');
-    } else {
-      setError('Astronaut not found. Please check the name.');
+    setIsLoading(true);
+    try {
+        const userQuestion = await maitriApiService.getSecurityQuestion(name);
+        if (userQuestion) {
+            setQuestion(userQuestion);
+            setStep('answerQuestion');
+        } else {
+            setError('Astronaut not found. Please check the name.');
+        }
+    } catch (err) {
+        setError((err as Error).message || 'Astronaut not found.');
+    } finally {
+        setIsLoading(false);
     }
   };
 
   const handleAnswerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (await dbService.verifySecurityAnswer(name, answer)) {
-      setStep('resetPassword');
-    } else {
-      setError('Incorrect answer. Please try again.');
+    setIsLoading(true);
+    try {
+        const isCorrect = await maitriApiService.verifySecurityAnswer(name, answer);
+        if (isCorrect) {
+            setStep('resetPassword');
+        } else {
+            setError('Incorrect answer. Please try again.');
+        }
+    } catch (err) {
+        setError((err as Error).message || 'Verification failed.');
+    } finally {
+        setIsLoading(false);
     }
   };
   
@@ -66,8 +82,15 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
       setError('Password must be at least 6 characters long.');
       return;
     }
-    await dbService.resetPassword(name, newPassword);
-    setStep('success');
+    setIsLoading(true);
+    try {
+        await maitriApiService.resetPassword(name, answer, newPassword);
+        setStep('success');
+    } catch (err) {
+        setError((err as Error).message || 'Failed to reset password.');
+    } finally {
+        setIsLoading(false);
+    }
   };
   
   const renderContent = () => {
@@ -78,7 +101,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">Answer Security Question</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">{question}</p>
             <input type="text" value={answer} onChange={e => setAnswer(e.target.value)} placeholder="Your Answer" required className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-accent-cyan focus:border-accent-cyan"/>
-            <button type="submit" className="w-full px-4 py-2 font-semibold text-white bg-accent-cyan rounded-lg hover:opacity-80">Verify</button>
+            <button type="submit" disabled={isLoading} className="w-full px-4 py-2 font-semibold text-white bg-accent-cyan rounded-lg hover:opacity-80 disabled:bg-gray-500">{isLoading ? 'Verifying...' : 'Verify'}</button>
           </form>
         );
       case 'resetPassword':
@@ -87,7 +110,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">Reset Your Password</h2>
             <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New Password" required className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-accent-cyan focus:border-accent-cyan"/>
             <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm New Password" required className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-accent-cyan focus:border-accent-cyan"/>
-            <button type="submit" className="w-full px-4 py-2 font-semibold text-white bg-accent-cyan rounded-lg hover:opacity-80">Reset Password</button>
+            <button type="submit" disabled={isLoading} className="w-full px-4 py-2 font-semibold text-white bg-accent-cyan rounded-lg hover:opacity-80 disabled:bg-gray-500">{isLoading ? 'Resetting...' : 'Reset Password'}</button>
           </form>
         );
       case 'success':
@@ -105,7 +128,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">Forgot Password</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400">Enter your name to begin the recovery process.</p>
             <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your Name" required className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-accent-cyan focus:border-accent-cyan"/>
-            <button type="submit" className="w-full px-4 py-2 font-semibold text-white bg-accent-cyan rounded-lg hover:opacity-80">Next</button>
+            <button type="submit" disabled={isLoading} className="w-full px-4 py-2 font-semibold text-white bg-accent-cyan rounded-lg hover:opacity-80 disabled:bg-gray-500">{isLoading ? 'Searching...' : 'Next'}</button>
           </form>
         );
     }

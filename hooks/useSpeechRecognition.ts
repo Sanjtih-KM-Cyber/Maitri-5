@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 
 // Fix: Add a type definition for the SpeechRecognition API to avoid TypeScript errors,
@@ -20,9 +19,9 @@ const SpeechRecognitionAPI =
 let recognition: SpeechRecognition | null = null;
 if (SpeechRecognitionAPI) {
     recognition = new SpeechRecognitionAPI();
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.lang = 'en-US';
-    recognition.interimResults = false;
+    recognition.interimResults = true;
 }
 
 export const useSpeechRecognition = () => {  
@@ -38,6 +37,7 @@ export const useSpeechRecognition = () => {
 
   const startListening = () => {
     if (recognition && !isListening) {
+      setTranscript(''); // Reset transcript for new session
       recognition.start();
       setIsListening(true);
     }
@@ -46,18 +46,23 @@ export const useSpeechRecognition = () => {
   useEffect(() => {
     if (!recognition) return;
 
-    recognition.onresult = (event) => {
-      setTranscript(event.results[0][0].transcript);
-      stopListening();
+    recognition.onresult = (event: any) => {
+      let currentTranscript = '';
+      for (let i = 0; i < event.results.length; i++) {
+        currentTranscript += event.results[i][0].transcript;
+      }
+      setTranscript(currentTranscript);
     };
 
     recognition.onerror = (event) => {
       console.error('Speech recognition error:', event.error);
-      stopListening();
+      if (isListening) stopListening();
     };
     
     recognition.onend = () => {
-      setIsListening(false);
+      if (isListening) {
+          setIsListening(false);
+      }
     };
 
     return () => {
@@ -67,7 +72,7 @@ export const useSpeechRecognition = () => {
         recognition.onend = null;
       }
     };
-  }, []);
+  }, [isListening]);
 
   return {
     isListening,

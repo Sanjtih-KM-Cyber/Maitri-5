@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Screen, AstronautData, UserData, UserType, SymptomLog, CaptainLog, Mood, SleepQuality, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, ChatMessage } from './types';
 import { ThemeContext, Theme } from './contexts/ThemeContext';
-import { maitriService } from './services/databaseService';
+import { maitriApiService } from './services/maitriApiService';
 import { getToken, removeToken } from './services/apiService';
 
 // Screens
@@ -9,7 +9,6 @@ import HomeScreen from './screens/HomeScreen';
 import GuardianScreen from './screens/GuardianScreen';
 import CoPilotScreen from './screens/CoPilotScreen';
 import StorytellerScreen from './screens/StorytellerScreen';
-import RecreationScreen from './screens/RecreationScreen';
 import ChatScreen from './screens/ChatScreen';
 import AuthScreen from './screens/AuthScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
@@ -86,7 +85,7 @@ const App: React.FC = () => {
     }
 
     const handleLogout = useCallback(() => {
-        maitriService.logout();
+        removeToken();
         setIsAuthenticated(false);
         setUserType(null);
         setAstronautData(null);
@@ -94,50 +93,28 @@ const App: React.FC = () => {
     }, []);
 
     const refreshAstronautData = useCallback(async () => {
-        // Don't set loading for background refreshes
-        // setIsLoading(true);
         try {
-            const data = await maitriService.getAstronautData();
+            const { data, userType } = await maitriApiService.getAstronautData();
             setAstronautData(data);
+            setUserType(userType);
         } catch (error) {
             console.error("Failed to refresh astronaut data:", error);
-            if ((error as Error).message.includes("No astronaut data")) {
-                 displayError("No astronaut data found for logged in user.");
-            } else {
-                displayError("Could not sync with mission control. Please check connection.");
-            }
-            // Don't auto-logout on a failed background refresh
-            // handleLogout();
-        } finally {
-            // setIsLoading(false);
+            displayError("Could not sync with mission control. Please check connection.");
+            handleLogout(); // If we can't get data, the token might be invalid, so log out.
         }
-    }, []);
+    }, [handleLogout]);
     
-    // Add polling for data refresh to simulate real-time updates
-    useEffect(() => {
-        const intervalId = setInterval(() => {
-            if (isAuthenticated && userType === 'astronaut') {
-                refreshAstronautData();
-            }
-        }, 30000); // Refresh every 30 seconds
-
-        return () => clearInterval(intervalId);
-    }, [isAuthenticated, userType, refreshAstronautData]);
-
     // Initial Auth Check
     useEffect(() => {
         const checkAuthStatus = async () => {
-            const userSession = maitriService.getLoggedInUserFromToken();
-            if (userSession) {
+            const token = getToken();
+            if (token) {
                 setIsAuthenticated(true);
-                setUserType(userSession.type);
-                if (userSession.type === 'astronaut') {
-                    setIsLoading(true);
-                    await refreshAstronautData();
-                    setIsLoading(false);
-                } else {
-                    setIsLoading(false); // Admin doesn't need astronaut data
-                }
+                // The user type will be determined when we fetch data.
+                // For an admin, astronautData will be null but that's handled.
+                setIsLoading(true);
+                await refreshAstronautData();
+                setIsLoading(false);
             } else {
                 setIsAuthenticated(false);
                 setIsLoading(false);
@@ -191,7 +168,7 @@ const App: React.FC = () => {
     const handleLogin = async (name: string, pass: string, type: UserType): Promise<boolean> => {
         setIsLoading(true);
         try {
-            await maitriService.login(name, pass, type);
+            await maitriApiService.login(name, pass, type);
             setIsAuthenticated(true);
             setUserType(type);
             if (type === 'astronaut') {
@@ -209,39 +186,43 @@ const App: React.FC = () => {
     
     const handleRegister = async (name: string, data: UserData) => {
        try {
-            const newAstronaut = await maitriService.register(name, data);
+            const newAstronaut = await maitriApiService.register(name, data);
             return { success: true, registeredName: newAstronaut.name, registeredPassword: data.password ?? '' };
         } catch (error) {
             console.error("Registration failed:", error);
-            return { success: false, error: (error as Error).message };
+            const errorMessage = (error as Error).message || 'An unknown error occurred.';
+            return { success: false, error: errorMessage };
         }
     };
     
     const handleDailyCheckIn = async (mood: Mood, sleep: SleepQuality) => {
       try {
-        await maitriService.addDailyCheckIn({ mood, sleep });
+        await maitriApiService.addDailyCheckIn({ mood, sleep });
         refreshAstronautData();
       } catch (error) { displayError("Failed to log daily check-in."); }
     };
     
-    const handleSymptomLog = async (log: Omit<SymptomLog, 'id' | 'date'>) => {
+    const handleSymptomLog = async (log: Omit<SymptomLog, 'id' | 'date'>): Promise<SymptomLog | null> => {
         try {
-            await maitriService.addSymptomLog(log);
+            const newLog = await maitriApiService.addSymptomLog(log);
             await refreshAstronautData();
-            // We can add a success alert here if needed
-        } catch (error) { displayError("Failed to log symptom."); }
+            return newLog;
+        } catch (error) { 
+            displayError("Failed to log symptom.");
+            return null;
+        }
     };
 
     const handleCaptainLog = async (log: Omit<CaptainLog, 'id' | 'date'>) => {
         try {
-            await maitriService.addCaptainLog(log);
+            await maitriApiService.addCaptainLog(log);
             await refreshAstronautData();
         } catch(error) { displayError("Failed to save captain's log."); }
     };
 
     const handleTasksUpdate = async (newTasks: MissionTask[]) => {
         try {
-            await maitriService.updateMissionTasks(newTasks);
+            await maitriApiService.updateMissionTasks(newTasks);
             await refreshAstronautData();
         } catch (error) { displayError("Failed to update mission tasks."); }
     };
@@ -292,8 +273,8 @@ const App: React.FC = () => {
         setAccentColor(color);
     }, []);
 
-    const handleOpenCameraRequest = (mediaType: 'photo' | 'video') => {
-        navigateTo(Screen.Guardian, { openCameraForMostRecentLog: mediaType });
+    const handleOpenCameraRequest = (mediaType: 'photo' | 'video', logId?: string) => {
+        navigateTo(Screen.Guardian, { openCameraForLog: { mediaType, logId } });
     };
 
     // Render Logic
@@ -310,8 +291,15 @@ const App: React.FC = () => {
     }
     
     if (!astronautData) {
-        return <div className="h-screen w-screen flex items-center justify-center bg-space-dark text-white">Error: Could not load astronaut data.</div>;
+        // This can happen briefly for an astronaut before data loads, or if there's an error.
+        return (
+            <div className="h-screen w-screen flex flex-col items-center justify-center bg-space-dark text-white">
+                <p>Error: Could not load astronaut data.</p>
+                <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 rounded">Logout</button>
+            </div>
+        );
     }
+
 
     const renderScreen = () => {
         const commonProps = { onClose: () => navigateTo(Screen.Home), navigateTo, screenContext };
@@ -319,7 +307,6 @@ const App: React.FC = () => {
             case Screen.Guardian: return <GuardianScreen {...commonProps} symptomLogs={astronautData.symptomLogs} doctorAdvice={astronautData.doctorAdvice} dailyLogs={astronautData.dailyCheckInLogs} onSymptomLog={handleSymptomLog} onToggleSleepSession={handleToggleSleepSession} isSleepSessionActive={isSleepSessionActive} massProtocols={astronautData.massProtocols} onMassProtocolClick={handleMassProtocolClick} onDataRefresh={refreshAstronautData} />;
             case Screen.CoPilot: return <CoPilotScreen {...commonProps} procedures={astronautData.procedures} tasks={astronautData.missionTasks} onTasksUpdate={handleTasksUpdate} onTaskComplete={handleTaskComplete} isTtsEnabled={isTtsEnabled} ttsVoice={maitriVoice} />;
             case Screen.Storyteller: return <StorytellerScreen {...commonProps} onSaveLog={handleCaptainLog} pastLogs={astronautData.captainLogs} />;
-            case Screen.Recreation: return <RecreationScreen {...commonProps} />;
             case Screen.Chat: return <ChatScreen {...commonProps} astronautName={astronautData.name} initialMessage={screenContext} isTtsEnabled={isTtsEnabled} ttsVoice={maitriVoice} onSensoryColorChange={handleSensoryColorChange} onSymptomLog={handleSymptomLog} onAddTask={handleAddTask} />;
             case Screen.Home:
             default:
@@ -369,6 +356,8 @@ const App: React.FC = () => {
                     onAddTask={handleAddTask}
                     onOpenCameraRequest={handleOpenCameraRequest}
                     voiceName={maitriVoice}
+                    astronautName={astronautData.name}
+                    onSensoryColorChange={handleSensoryColorChange}
                 />
             </div>
         </ThemeContext.Provider>

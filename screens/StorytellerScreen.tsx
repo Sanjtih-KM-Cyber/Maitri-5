@@ -35,11 +35,18 @@ const StorytellerScreen: React.FC<StorytellerScreenProps> = ({ navigateTo, onClo
 
    const openCamera = useCallback(async (mode: 'photo' | 'video') => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: mode === 'video' });
             streamRef.current = stream;
             setCaptureMode(mode);
             setIsCameraOpen(true);
         } catch (err) { console.error("Error accessing camera/mic:", err); }
+    }, []);
+    
+    // Cleanup effect to ensure camera stream is released on component unmount
+    useEffect(() => {
+        return () => {
+            streamRef.current?.getTracks().forEach(track => track.stop());
+        };
     }, []);
     
     useEffect(() => {

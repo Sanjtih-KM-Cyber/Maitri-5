@@ -1,10 +1,11 @@
 
-import { Request as ExpressRequest, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { UserType } from '../../../types';
 
-// Fix: Aliased Express.Request to avoid potential type conflicts and ensure properties are inherited correctly.
-export interface AuthRequest extends ExpressRequest {
+// Fix: The alias 'ExpressRequest' was causing type inheritance issues. 
+// Changed to extend the base `Request` type directly to ensure all properties are available on AuthRequest.
+export interface AuthRequest extends Request {
   user?: {
     id: string;
     name: string;

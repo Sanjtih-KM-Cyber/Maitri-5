@@ -10,6 +10,7 @@ import GuardianScreen from './screens/GuardianScreen';
 import CoPilotScreen from './screens/CoPilotScreen';
 import StorytellerScreen from './screens/StorytellerScreen';
 import ChatScreen from './screens/ChatScreen';
+import LandingScreen from './screens/LandingScreen';
 import AuthScreen from './screens/AuthScreen';
 import AdminDashboardScreen from './screens/AdminDashboardScreen';
 
@@ -48,6 +49,7 @@ const App: React.FC = () => {
     const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.Home);
     const [screenContext, setScreenContext] = useState<any>(null);
     const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // null means initial check
+    const [hasEntered, setHasEntered] = useState<boolean>(false);
     const [userType, setUserType] = useState<UserType | null>(null);
     const [astronautData, setAstronautData] = useState<AstronautData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -280,6 +282,10 @@ const App: React.FC = () => {
     // Render Logic
     if (isLoading || isAuthenticated === null) {
         return <div className="h-screen w-screen flex items-center justify-center bg-space-dark text-white">Loading MAITRI...</div>;
+    }
+
+    if (!hasEntered) {
+        return <LandingScreen onEnter={() => setHasEntered(true)} />;
     }
 
     if (!isAuthenticated) {

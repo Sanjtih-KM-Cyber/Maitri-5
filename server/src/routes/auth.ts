@@ -2,12 +2,12 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { User, Astronaut } from '../db';
-import { UserData } from '../../../types';
 
 const router = express.Router();
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+// FIX: Explicitly type req and res to resolve property access errors.
+router.post('/register', async (req: express.Request, res: express.Response) => {
     const { name, password, securityQuestion, securityAnswer } = req.body;
 
     if (!name || !password || !securityQuestion || !securityAnswer) {
@@ -41,14 +41,15 @@ router.post('/register', async (req, res) => {
 
         res.status(201).json(newAstronautData);
 
-    } catch (err: any) {
-        console.error(err.message);
+    } catch (err) {
+        if (err instanceof Error) console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+// FIX: Explicitly type req and res to resolve property access errors.
+router.post('/login', async (req: express.Request, res: express.Response) => {
     const { name, password, type } = req.body;
     if (!name || !password || !type) {
         return res.status(400).json({ message: 'Please provide name, password, and type' });
@@ -86,15 +87,15 @@ router.post('/login', async (req, res) => {
             }
         );
 
-    } catch (err: any) {
-        console.error(err.message);
+    } catch (err) {
+        if (err instanceof Error) console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
 // --- Forgot Password Flow ---
-// Step 1: Get Security Question
-router.post('/forgot-password/start', async (req, res) => {
+// FIX: Explicitly type req and res to resolve property access errors.
+router.post('/forgot-password/start', async (req: express.Request, res: express.Response) => {
     const { name } = req.body;
     try {
         const user = await User.findOne({ name: name.toLowerCase() });
@@ -103,8 +104,8 @@ router.post('/forgot-password/start', async (req, res) => {
     } catch (err) { res.status(500).json({ message: 'Server error' }); }
 });
 
-// Step 2: Verify Answer
-router.post('/forgot-password/verify', async (req, res) => {
+// FIX: Explicitly type req and res to resolve property access errors.
+router.post('/forgot-password/verify', async (req: express.Request, res: express.Response) => {
     const { name, answer } = req.body;
     try {
         const user = await User.findOne({ name: name.toLowerCase() }).select('+securityAnswer');
@@ -116,8 +117,8 @@ router.post('/forgot-password/verify', async (req, res) => {
     } catch (err) { res.status(500).json({ message: 'Server error' }); }
 });
 
-// Step 3: Reset Password
-router.post('/forgot-password/reset', async (req, res) => {
+// FIX: Explicitly type req and res to resolve property access errors.
+router.post('/forgot-password/reset', async (req: express.Request, res: express.Response) => {
     const { name, answer, newPassword } = req.body;
      try {
         const user = await User.findOne({ name: name.toLowerCase() }).select('+securityAnswer +password');

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { ChatMessage } from '../types.ts';
 
@@ -11,7 +12,10 @@ const getDb = (): Promise<IDBDatabase> => {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
-      request.onerror = () => reject(request.error);
+      request.onerror = () => {
+          console.error("IndexedDB error:", request.error);
+          reject(request.error);
+      };
       request.onsuccess = () => resolve(request.result);
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
@@ -27,7 +31,11 @@ const getDb = (): Promise<IDBDatabase> => {
 export const useChatHistory = (astronautName: string) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
+  // Load history from IndexedDB on component mount
   useEffect(() => {
+    if (!astronautName) return;
+
+    let isMounted = true;
     const loadHistory = async () => {
       try {
         const db = await getDb();
@@ -35,20 +43,32 @@ export const useChatHistory = (astronautName: string) => {
         const store = transaction.objectStore(STORE_NAME);
         const request = store.get(astronautName);
         request.onsuccess = () => {
-          if (request.result) {
+          if (isMounted && request.result) {
             setMessages(request.result.history);
+          } else if (isMounted) {
+            // Initialize with a welcome message if no history exists
+            const welcomeMessage: ChatMessage = {
+              id: `model-${Date.now()}`,
+              text: `Hello, Captain ${astronautName}. I'm MAITRI, your AI companion. How can I assist you today?`,
+              sender: 'model',
+              timestamp: new Date().toISOString(),
+            };
+            setMessages([welcomeMessage]);
           }
         };
+        request.onerror = () => console.error("Error loading chat history:", request.error);
       } catch (error) {
         console.error("Failed to load chat history from IndexedDB:", error);
       }
     };
-    if (astronautName) {
-      loadHistory();
-    }
+    
+    loadHistory();
+
+    return () => { isMounted = false; };
   }, [astronautName]);
 
   const saveHistory = useCallback(async (newMessages: ChatMessage[]) => {
+    if (!astronautName) return;
     try {
       const db = await getDb();
       const transaction = db.transaction(STORE_NAME, 'readwrite');
@@ -59,21 +79,9 @@ export const useChatHistory = (astronautName: string) => {
     }
   }, [astronautName]);
 
-  const addMessage = useCallback((newMessage: ChatMessage, isUpdate = false) => {
+  const addMessage = useCallback((newMessage: ChatMessage) => {
     setMessages(prevMessages => {
-      let updatedMessages;
-      if (isUpdate) {
-        // Find and replace the message with the same ID, or add if not found
-        const existingIndex = prevMessages.findIndex(m => m.id === newMessage.id);
-        if (existingIndex > -1) {
-          updatedMessages = [...prevMessages];
-          updatedMessages[existingIndex] = newMessage;
-        } else {
-          updatedMessages = [...prevMessages, newMessage];
-        }
-      } else {
-        updatedMessages = [...prevMessages, newMessage];
-      }
+      const updatedMessages = [...prevMessages, newMessage];
       saveHistory(updatedMessages);
       return updatedMessages;
     });

@@ -1,9 +1,13 @@
+
 import { GoogleGenAI, Type, GenerateContentResponse, FunctionDeclaration } from "@google/genai";
 import { ChatMessage, Screen, SymptomLog, MissionTask } from "../types.ts";
 
 // Fallback to an empty string if the API key is not provided in the environment.
 // This prevents the constructor from throwing an error and crashing the app on load.
 const API_KEY = process.env.API_KEY || '';
+if (!API_KEY) {
+    console.warn("API_KEY environment variable not set. Gemini API calls will fail.");
+}
 const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 // --- Function Declarations for Tools ---
@@ -85,6 +89,7 @@ export const functionDeclarations = [
     logSymptomFunctionDeclaration,
     addMissionTaskFunctionDeclaration,
     sendMessageToFamilyFunctionDeclaration,
+    setSensoryImmersionFunctionDeclaration,
 ];
 
 // --- Adaptive Persona System ---
@@ -119,6 +124,7 @@ const getSystemInstruction = (persona: Persona, astronautName: string): string =
 
 
 export const generateCreativeText = async (prompt: string, systemInstruction: string): Promise<string> => {
+    if (!API_KEY) return "API Key is not configured. Please check the environment variables.";
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -133,6 +139,7 @@ export const generateCreativeText = async (prompt: string, systemInstruction: st
 };
 
 export const generateCreativeTextWithColor = async (prompt: string): Promise<{ description: string; dominant_color_hex: string; }> => {
+    if (!API_KEY) return { description: "API Key is not configured.", dominant_color_hex: '#06b6d4' };
     const systemInstruction = "You are a sensory immersion AI. Based on the user's prompt, generate a vivid, multi-sensory description of the scene. Also, determine the most dominant or representative color of that scene and provide its hex code. You must respond in JSON format.";
 
     try {
@@ -162,6 +169,8 @@ export const generateCreativeTextWithColor = async (prompt: string): Promise<{ d
 };
 
 export async function generateChatResponseWithTools(history: ChatMessage[], astronautName: string): Promise<GenerateContentResponse> {
+    if (!API_KEY) throw new Error("API Key is not configured.");
+    
     const contents = history.map(msg => ({
         role: msg.sender === 'user' ? 'user' : 'model',
         parts: [{ text: msg.text }],

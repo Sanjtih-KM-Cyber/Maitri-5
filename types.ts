@@ -1,3 +1,4 @@
+
 // types.ts
 
 export enum Screen {
@@ -5,6 +6,7 @@ export enum Screen {
   Guardian = 'guardian',
   CoPilot = 'copilot',
   Storyteller = 'storyteller',
+  Recreation = 'recreation',
   Chat = 'chat',
   Admin = 'admin',
 }
@@ -81,7 +83,7 @@ export interface MassProtocol {
     id: string;
     name: string;
     sets: number;
-    duration: number; // in minutes
+    duration: number; // in seconds for workout phase
     rest: number; // in seconds
 }
 

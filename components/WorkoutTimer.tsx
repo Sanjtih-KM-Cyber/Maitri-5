@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { MassProtocol } from '../types.ts';
 
@@ -29,58 +30,55 @@ const WorkoutTimer: React.FC<WorkoutTimerProps> = ({ isOpen, onClose, protocol, 
   const [isPaused, setIsPaused] = useState(true);
   
   const spokenMilestones = useRef(new Set<number>());
-  const totalDurationForSet = useMemo(() => (protocol?.duration || 0) * 60, [protocol]);
+  const totalDurationForSet = useMemo(() => protocol?.duration || 0, [protocol]);
 
   // Reset and initialize timer when a new protocol is started
   useEffect(() => {
     if (isOpen && protocol) {
       setCurrentSet(1);
-      setTimeLeftInPhase(protocol.duration * 60);
+      setTimeLeftInPhase(protocol.duration);
       setPhase('working');
       setIsPaused(false);
       spokenMilestones.current.clear();
       if (isTtsEnabled) speak(`Beginning ${protocol.name}. First set starts now.`, ttsVoice);
     } else {
       setPhase('idle');
+      setIsPaused(true);
     }
-  }, [isOpen, protocol, isTtsEnabled, speak, ttsVoice]);
-  
+  }, [isOpen, protocol]);
+
   // The main timer tick logic
   useEffect(() => {
     if (!isOpen || isPaused || phase === 'finished' || phase === 'idle') return;
 
     const interval = setInterval(() => {
       setTimeLeftInPhase(prev => {
-        const nextTime = prev - 1;
-        if (nextTime < 0) return 0; // Prevent negative time
-        return nextTime;
+        if (prev <= 1) {
+          // Transition to next phase
+          if (phase === 'working') {
+            if (currentSet < protocol!.sets) {
+              setPhase('resting');
+              setTimeLeftInPhase(protocol!.rest);
+              if (isTtsEnabled) speak(`Set ${currentSet} complete. Well done. Rest for ${protocol!.rest} seconds.`, ttsVoice);
+            } else {
+              setPhase('finished');
+              if (isTtsEnabled) speak(`M.A.S.S. Protocol complete. Fantastic work, Captain.`, ttsVoice);
+            }
+          } else if (phase === 'resting') {
+            setCurrentSet(prevSet => prevSet + 1);
+            setPhase('working');
+            setTimeLeftInPhase(protocol!.duration);
+            spokenMilestones.current.clear();
+            if (isTtsEnabled) speak(`Starting set ${currentSet + 1}.`, ttsVoice);
+          }
+          return 0;
+        }
+        return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isOpen, isPaused, phase]);
-
-  // Phase transition logic
-  useEffect(() => {
-    if (timeLeftInPhase > 0 || !protocol || isPaused) return;
-
-    if (phase === 'working') {
-      if (currentSet < protocol.sets) {
-        setPhase('resting');
-        setTimeLeftInPhase(protocol.rest);
-        if (isTtsEnabled) speak(`Set ${currentSet} complete. Well done. Rest for ${protocol.rest} seconds.`, ttsVoice);
-      } else {
-        setPhase('finished');
-        if (isTtsEnabled) speak(`M.A.S.S. Protocol for today is complete. Fantastic work, Captain. You've invested in your health for today and for your return to Earth.`, ttsVoice);
-      }
-    } else if (phase === 'resting') {
-      setCurrentSet(prev => prev + 1);
-      setPhase('working');
-      setTimeLeftInPhase(protocol.duration * 60);
-      spokenMilestones.current.clear();
-      if (isTtsEnabled) speak(`Starting set ${currentSet + 1}.`, ttsVoice);
-    }
-  }, [timeLeftInPhase, phase, currentSet, protocol, isPaused, isTtsEnabled, speak, ttsVoice]);
+  }, [isOpen, isPaused, phase, currentSet, protocol, isTtsEnabled, speak, ttsVoice]);
   
   // Motivational TTS cues logic
   useEffect(() => {

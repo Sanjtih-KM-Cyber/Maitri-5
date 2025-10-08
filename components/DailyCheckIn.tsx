@@ -11,7 +11,7 @@ interface DailyCheckInProps {
 const moods: Mood[] = ['Excellent', 'Good', 'Okay', 'Tired', 'Stressed'];
 const sleepHours: SleepQuality[] = ['< 6 hours', '6-7 hours', '7-8 hours', '8+ hours'];
 
-const DailyCheckIn: React.FC<DailyCheckInProps> = ({ isOpen, onClose, onSubmit }) => {
+const DailyCheckIn: React.FC<DailyCheckInProps> = ({ isOpen, onSubmit }) => {
   const [selectedMood, setSelectedMood] = useState<Mood>('Good');
   const [selectedSleep, setSelectedSleep] = useState<SleepQuality>('7-8 hours');
 
@@ -22,7 +22,7 @@ const DailyCheckIn: React.FC<DailyCheckInProps> = ({ isOpen, onClose, onSubmit }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" aria-modal="true" role="dialog">
       <div 
         className="flex flex-col space-y-6 p-8 bg-gray-100 dark:bg-space-dark/80 rounded-lg shadow-2xl border border-slate-300/20 dark:border-slate-500/20 w-11/12 max-w-lg" 
         onClick={e => e.stopPropagation()}

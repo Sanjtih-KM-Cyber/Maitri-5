@@ -1,6 +1,19 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Schema, model, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { AstronautData, UserData, UserType, SymptomLog, CaptainLog, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, EarthlinkMessage } from '../../types';
+import process from 'process';
+import type {
+    AstronautData,
+    UserData,
+    UserType,
+    SymptomLog,
+    CaptainLog,
+    DoctorAdvice,
+    MissionProcedure,
+    MassProtocol,
+    DailyCheckInLog,
+    MissionTask,
+    EarthlinkMessage,
+} from '../../types';
 
 // --- Sub-document Schemas ---
 
@@ -82,8 +95,7 @@ const AstronautDataSchema = new Schema<AstronautData>({
     earthlinkMessages: [EarthlinkMessageSchema],
 });
 
-export const Astronaut = mongoose.model<AstronautData>('Astronaut', AstronautDataSchema);
-
+export const Astronaut = model<AstronautData>('Astronaut', AstronautDataSchema);
 
 // --- User Schema for Authentication ---
 export interface IUser extends Document, Omit<UserData, 'password'> {
@@ -110,7 +122,7 @@ UserSchema.pre('save', async function (next) {
     next();
 });
 
-export const User = mongoose.model<IUser>('User', UserSchema);
+export const User = model<IUser>('User', UserSchema);
 
 // --- DB Connection ---
 export const connectDB = async () => {
@@ -118,15 +130,16 @@ export const connectDB = async () => {
         const mongoUri = process.env.MONGO_URI;
         if (!mongoUri) {
             console.error('MONGO_URI not defined in .env file');
-            // Fix: Cast 'process' to 'any' to resolve TypeScript error about missing 'exit' property.
-            // This is a workaround for a likely missing or misconfigured @types/node.
-            (process as any).exit(1);
+            process.exit(1);
         }
         await mongoose.connect(mongoUri);
         console.log('MongoDB Connected...');
-    } catch (err: any) {
-        console.error(err.message);
-        // Fix: Cast 'process' to 'any' to resolve TypeScript error about missing 'exit' property.
-        (process as any).exit(1);
+    } catch (err) {
+        if (err instanceof Error) {
+            console.error(err.message);
+        } else {
+            console.error('An unknown error occurred during DB connection', err);
+        }
+        process.exit(1);
     }
 };

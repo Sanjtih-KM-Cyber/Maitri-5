@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { maitriApiService } from '../services/maitriApiService.ts';
 
@@ -20,7 +21,6 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
 
   useEffect(() => {
     if (!isOpen) {
-        // Reset state when modal is closed
         setTimeout(() => {
             setStep('enterName');
             setName('');
@@ -30,7 +30,7 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ isOpen, onClo
             setConfirmPassword('');
             setError('');
             setIsLoading(false);
-        }, 300); // delay to allow for closing animation
+        }, 300);
     }
   }, [isOpen]);
 

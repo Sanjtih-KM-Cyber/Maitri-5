@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import GlassCard from '../components/GlassCard';
-import { UserData, UserType } from '../types';
-import ForgotPasswordModal from '../components/ForgotPasswordModal';
-// Note: We don't import the service here, it's handled by App.tsx
+import GlassCard from '../components/GlassCard.tsx';
+import { UserData, UserType } from '../types.ts';
+import ForgotPasswordModal from '../components/ForgotPasswordModal.tsx';
 
 interface AuthScreenProps {
   onLogin: (name: string, pass: string, userType: UserType) => Promise<boolean>;
@@ -37,6 +36,18 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onRegister }) => {
   const [secQuestion, setSecQuestion] = useState(securityQuestions[0]);
   const [secAnswer, setSecAnswer] = useState('');
   
+  const resetFormState = () => {
+    setName('');
+    setPassword('');
+    setConfirmPassword('');
+    setSecAnswer('');
+    setError('');
+  };
+  
+  useEffect(() => {
+    resetFormState();
+  }, [mode]);
+
   useEffect(() => {
     if (successMessage) {
         const timer = setTimeout(() => setSuccessMessage(''), 5000);
@@ -46,6 +57,10 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onRegister }) => {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name || !password) {
+        setError("Please enter a name and password.");
+        return;
+    }
     setError('');
     setSuccessMessage('');
     setIsLoading(true);
@@ -71,7 +86,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onRegister }) => {
     setIsLoading(true);
     const result = await onRegister(name, { password, securityQuestion: secQuestion, securityAnswer: secAnswer });
     if (result.success && result.registeredName && result.registeredPassword) {
-        resetFormState();
         setMode('login');
         setName(result.registeredName);
         setPassword(result.registeredPassword);
@@ -80,14 +94,6 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onRegister }) => {
         setError(result.error || 'An account with this name already exists.');
     }
     setIsLoading(false);
-  };
-  
-  const resetFormState = () => {
-    setName('');
-    setPassword('');
-    setConfirmPassword('');
-    setSecAnswer('');
-    setError('');
   };
 
   const renderLogin = () => (
@@ -120,13 +126,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onRegister }) => {
             className="w-full p-3 bg-gray-200/50 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-cyan focus:border-transparent outline-none transition text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400"
             disabled={isLoading}
         />
-        <button type="submit" disabled={isLoading} className="w-full p-3 bg-accent-cyan text-white rounded-lg font-bold hover:bg-cyan-500 transition-colors disabled:bg-gray-500">
+        <button type="submit" disabled={isLoading} className="w-full p-3 bg-accent-cyan text-white rounded-lg font-bold hover:bg-cyan-500 transition-colors disabled:bg-gray-500 flex items-center justify-center">
+            {isLoading && <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
             {isLoading ? 'Logging in...' : 'Login'}
         </button>
         <div className="text-center text-sm">
             <button type="button" onClick={() => setIsForgotModalOpen(true)} className="text-gray-500 dark:text-gray-400 hover:text-accent-cyan">Forgot Password?</button>
             <span className="mx-2 text-gray-600 dark:text-gray-500">|</span>
-            <button type="button" onClick={() => { setMode('register'); resetFormState(); }} className="text-gray-500 dark:text-gray-400 hover:text-accent-cyan">Register</button>
+            <button type="button" onClick={() => setMode('register')} className="text-gray-500 dark:text-gray-400 hover:text-accent-cyan">Register</button>
         </div>
     </form>
   );
@@ -141,11 +148,13 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onRegister }) => {
             {securityQuestions.map(q => <option key={q} value={q}>{q}</option>)}
         </select>
         <input type="text" value={secAnswer} onChange={(e) => setSecAnswer(e.target.value)} placeholder="Your Answer" className="w-full p-3 bg-gray-200/50 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-accent-cyan focus:border-transparent outline-none transition text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400" disabled={isLoading}/>
-        <button type="submit" className="w-full p-3 bg-accent-cyan text-white rounded-lg font-bold hover:bg-cyan-500 transition-colors disabled:bg-gray-500" disabled={isLoading}>
+        <button type="submit" className="w-full p-3 bg-accent-cyan text-white rounded-lg font-bold hover:bg-cyan-500 transition-colors disabled:bg-gray-500 flex items-center justify-center" disabled={isLoading}>
+            {isLoading && <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>}
             {isLoading ? 'Registering...' : 'Register'}
         </button>
+        {isLoading && <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 animate-fade-in">Securing your account... This may take a moment.</p>}
         <div className="text-center text-sm">
-            <button type="button" onClick={() => { setMode('login'); resetFormState(); }} className="text-gray-500 dark:text-gray-400 hover:text-accent-cyan">Already have an account? Login</button>
+            <button type="button" onClick={() => setMode('login')} className="text-gray-500 dark:text-gray-400 hover:text-accent-cyan">Already have an account? Login</button>
         </div>
     </form>
   );
@@ -153,7 +162,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ onLogin, onRegister }) => {
   return (
     <>
         <div className="min-h-screen flex items-center justify-center p-4 bg-gray-100 dark:bg-space-dark transition-colors">
-             <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/50 via-space-dark to-indigo-900/50 animate-[gradient_15s_ease_infinite]" style={{backgroundSize: '400% 400%', animationName: 'gradient', animationDuration: '15s', animationTimingFunction: 'ease', animationIterationCount: 'infinite' }}></div>
+             <div className="absolute inset-0 bg-gradient-to-br from-cyan-900/50 via-space-dark to-indigo-900/50" style={{backgroundSize: '400% 400%', animation: 'gradient 15s ease infinite' }}></div>
              <style>{`
                 @keyframes gradient {
                     0% { background-position: 0% 50%; }

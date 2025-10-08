@@ -1,13 +1,15 @@
-import express, { Response } from 'express';
-import { auth, AuthRequest, adminAuth } from '../middleware/auth';
+import express from 'express';
+import { auth, adminAuth } from '../middleware/auth';
 import { Astronaut } from '../db';
-import { io } from '../index';
-import { SymptomLog, CaptainLog, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, EarthlinkMessage } from '../../../types';
+import type { AuthRequest } from '../middleware/auth';
+import type { SymptomLog, CaptainLog, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, EarthlinkMessage } from '../../../types';
 
 const router = express.Router();
 
 // --- Helper function to emit updates ---
 const emitAstronautUpdate = async (name: string) => {
+    // FIX: Use dynamic import() for ES Modules to handle circular dependency with index.ts
+    const { io } = await import('../index');
     const updatedAstronaut = await Astronaut.findOne({ name });
     if (updatedAstronaut) {
         io.emit('astronaut-data-updated', updatedAstronaut.toObject());
@@ -17,23 +19,23 @@ const emitAstronautUpdate = async (name: string) => {
 // --- Astronaut Routes (for logged-in user) ---
 
 // GET /api/astronauts/me - Get my own data
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.get('/astronauts/me', auth, async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.get('/astronauts/me', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const astronautData = await Astronaut.findOne({ name: req.user?.name });
         if (!astronautData) {
             return res.status(404).json({ message: 'Astronaut data not found' });
         }
         res.json({ data: astronautData.toObject(), userType: req.user?.type });
-    } catch (err: any) {
-        console.error(err.message);
+    } catch (err) {
+        if (err instanceof Error) console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
 // POST /api/astronauts/me/symptoms
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.post('/astronauts/me/symptoms', auth, async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.post('/astronauts/me/symptoms', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { symptom, severity, notes, photo, video } = req.body;
         const newLog: SymptomLog = {
@@ -50,12 +52,12 @@ router.post('/astronauts/me/symptoms', auth, async (req: AuthRequest, res: Respo
         
         await emitAstronautUpdate(req.user!.name);
         res.status(201).json(newLog);
-    } catch (err: any) { res.status(500).send('Server Error'); }
+    } catch (err) { res.status(500).send('Server Error'); }
 });
 
 // PUT /api/astronauts/me/symptoms/:logId/media
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.put('/astronauts/me/symptoms/:logId/media', auth, async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.put('/astronauts/me/symptoms/:logId/media', auth, async (req: AuthRequest, res: express.Response) => {
     const { logId } = req.params;
     const { mediaUrl, mediaType } = req.body;
     try {
@@ -70,8 +72,8 @@ router.put('/astronauts/me/symptoms/:logId/media', auth, async (req: AuthRequest
 });
 
 // POST /api/astronauts/me/captain-logs
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.post('/astronauts/me/captain-logs', auth, async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.post('/astronauts/me/captain-logs', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { text, photo, video } = req.body;
         const newLog: CaptainLog = {
@@ -86,14 +88,21 @@ router.post('/astronauts/me/captain-logs', auth, async (req: AuthRequest, res: R
 });
 
 // POST /api/astronauts/me/check-ins
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.post('/astronauts/me/check-ins', auth, async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.post('/astronauts/me/check-ins', auth, async (req: AuthRequest, res: express.Response) => {
     try {
-        const { mood, sleep } = req.body;
-        const newLog: DailyCheckInLog = {
-            date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
-            mood, sleep
-        };
+        const { mood, sleep, date } = req.body;
+        if (!date) {
+            return res.status(400).json({ message: 'Date is required for check-in.' });
+        }
+
+        const astronaut = await Astronaut.findOne({ name: req.user?.name });
+        if (astronaut && astronaut.dailyCheckInLogs.some(log => log.date === date)) {
+            return res.status(409).json({ message: 'A check-in for this date already exists.' });
+        }
+
+        const newLog: Omit<DailyCheckInLog, 'id'> = { date, mood, sleep };
+        
         await Astronaut.updateOne({ name: req.user?.name }, { $push: { dailyCheckInLogs: newLog } });
         await emitAstronautUpdate(req.user!.name);
         res.status(201).json(newLog);
@@ -101,8 +110,8 @@ router.post('/astronauts/me/check-ins', auth, async (req: AuthRequest, res: Resp
 });
 
 // PUT /api/astronauts/me/tasks
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.put('/astronauts/me/tasks', auth, async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.put('/astronauts/me/tasks', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { tasks } = req.body;
         await Astronaut.updateOne({ name: req.user?.name }, { $set: { missionTasks: tasks } });
@@ -112,8 +121,8 @@ router.put('/astronauts/me/tasks', auth, async (req: AuthRequest, res: Response)
 });
 
 // PUT /api/astronauts/me/earthlink/:messageId/viewed
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.put('/astronauts/me/earthlink/:messageId/viewed', auth, async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.put('/astronauts/me/earthlink/:messageId/viewed', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         await Astronaut.updateOne(
             { name: req.user?.name, 'earthlinkMessages.id': req.params.messageId },
@@ -125,15 +134,15 @@ router.put('/astronauts/me/earthlink/:messageId/viewed', auth, async (req: AuthR
 });
 
 // POST /api/astronauts/me/earthlink
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.post('/astronauts/me/earthlink', auth, async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.post('/astronauts/me/earthlink', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { from, text, photoUrl, videoUrl } = req.body;
         const newMessage: EarthlinkMessage = {
             id: `earth-${Date.now()}`,
             date: new Date().toISOString(),
             from, text, photoUrl, videoUrl,
-            viewed: true // Messages sent by astronaut are "viewed" by them
+            viewed: true
         };
         await Astronaut.updateOne({ name: req.user?.name }, { $push: { earthlinkMessages: newMessage } });
         await emitAstronautUpdate(req.user!.name);
@@ -145,17 +154,16 @@ router.post('/astronauts/me/earthlink', auth, async (req: AuthRequest, res: Resp
 // --- Admin Routes ---
 
 // GET /api/admin/astronauts
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.get('/admin/astronauts', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
+router.get('/admin/astronauts', [auth, adminAuth], async (req, res: express.Response) => {
     try {
         const astronauts = await Astronaut.find().sort({ name: 1 });
         res.json(astronauts.map(a => a.toObject()));
-    } catch (err: any) { res.status(500).send('Server Error'); }
+    } catch (err) { res.status(500).send('Server Error'); }
 });
 
 // POST /api/admin/astronauts/:name/advice
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.post('/admin/astronauts/:name/advice', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.post('/admin/astronauts/:name/advice', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
     try {
         const { text, symptomLogId } = req.body;
         const newAdvice: DoctorAdvice = {
@@ -170,8 +178,8 @@ router.post('/admin/astronauts/:name/advice', [auth, adminAuth], async (req: Aut
 });
 
 // POST /api/admin/astronauts/:name/procedures
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.post('/admin/astronauts/:name/procedures', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.post('/admin/astronauts/:name/procedures', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
     try {
         const { name, steps } = req.body;
         const newProc: MissionProcedure = {
@@ -185,8 +193,8 @@ router.post('/admin/astronauts/:name/procedures', [auth, adminAuth], async (req:
 });
 
 // POST /api/admin/astronauts/:name/mass-protocols
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.post('/admin/astronauts/:name/mass-protocols', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.post('/admin/astronauts/:name/mass-protocols', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
     try {
         const { name, sets, duration, rest } = req.body;
         const newProto: MassProtocol = {
@@ -200,8 +208,8 @@ router.post('/admin/astronauts/:name/mass-protocols', [auth, adminAuth], async (
 });
 
 // PUT /api/admin/astronauts/:name/photo
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.put('/admin/astronauts/:name/photo', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.put('/admin/astronauts/:name/photo', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
     try {
         const { photoUrl } = req.body;
         await Astronaut.updateOne({ name: req.params.name }, { $set: { photoUrl } });
@@ -211,8 +219,8 @@ router.put('/admin/astronauts/:name/photo', [auth, adminAuth], async (req: AuthR
 });
 
 // POST /api/admin/astronauts/:name/earthlink
-// FIX: Use express.Response to ensure correct typing and avoid errors.
-router.post('/admin/astronauts/:name/earthlink', [auth, adminAuth], async (req: AuthRequest, res: Response) => {
+// FIX: Explicitly type res as express.Response to resolve property access errors.
+router.post('/admin/astronauts/:name/earthlink', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
     try {
         const { from, text, photoUrl, videoUrl } = req.body;
         const newMessage: EarthlinkMessage = {

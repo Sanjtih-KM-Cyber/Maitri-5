@@ -61,7 +61,7 @@ const addCaptainLog = (log: Omit<CaptainLog, 'id' | 'date'>): Promise<CaptainLog
     return apiService.post<CaptainLog>('/astronauts/me/captain-logs', log);
 };
 
-const addDailyCheckIn = (checkIn: { mood: Mood; sleep: SleepQuality }): Promise<DailyCheckInLog> => {
+const addDailyCheckIn = (checkIn: { mood: Mood; sleep: SleepQuality; date: string }): Promise<DailyCheckInLog> => {
     return apiService.post<DailyCheckInLog>('/astronauts/me/check-ins', checkIn);
 };
 

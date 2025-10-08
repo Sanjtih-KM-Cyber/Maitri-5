@@ -31,6 +31,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, name, phot
     <div 
         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" 
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="profile-title"
     >
       <div 
         className="flex flex-col space-y-4 p-6 bg-gray-100 dark:bg-space-dark rounded-lg shadow-2xl border border-gray-300 dark:border-slate-500/20 w-11/12 max-w-sm" 
@@ -38,7 +41,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, name, phot
       >
         <div className="flex flex-col items-center space-y-2">
             <Avatar name={name} photoUrl={photoUrl} className="w-24 h-24 rounded-full border-2 border-accent-cyan text-4xl"/>
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white capitalize">{name}</h2>
+            <h2 id="profile-title" className="text-2xl font-bold text-gray-800 dark:text-white capitalize">{name}</h2>
             <p className="text-accent-cyan capitalize">{designation}</p>
         </div>
         

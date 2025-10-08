@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 
-// This component is likely a wrapper or legacy component.
+// This component is a legacy/placeholder component.
 // The main authentication flow is handled by AuthScreen.tsx.
+// A real-world implementation might perform a redirect here.
 const LoginScreen: React.FC = () => {
   return (
-    <div>
+    <div className="h-screen w-screen flex items-center justify-center bg-space-dark text-white">
       <p>Redirecting to authentication...</p>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Screen, MissionTask, MissionProcedure } from '../types.ts';
 import GlassCard from '../components/GlassCard.tsx';
@@ -13,7 +14,7 @@ interface ProcedureRunnerModalProps {
     ttsVoice: string;
 }
 
-const confirmationKeywords = ["check", "confirm", "acknowledged", "done", "next", "ok", "okay"];
+const confirmationKeywords = ["check", "confirm", "acknowledged", "done", "next", "ok", "okay", "proceed"];
 
 const ProcedureRunnerModal: React.FC<ProcedureRunnerModalProps> = ({ isOpen, onClose, procedure, isTtsEnabled, ttsVoice }) => {
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -26,32 +27,33 @@ const ProcedureRunnerModal: React.FC<ProcedureRunnerModalProps> = ({ isOpen, onC
         if (procedure && currentStepIndex < procedure.steps.length - 1) {
             setCurrentStepIndex(prev => prev + 1);
         } else {
-            speak("Procedure complete.", ttsVoice);
-            onClose(); // End of procedure
+            if (isTtsEnabled) speak("Procedure complete. Well done, Captain.", ttsVoice);
+            onClose();
         }
-    }, [procedure, currentStepIndex, onClose, speak, ttsVoice]);
+    }, [procedure, currentStepIndex, onClose, speak, ttsVoice, isTtsEnabled]);
 
     useEffect(() => {
         if (isOpen && currentStep && isTtsEnabled) {
             speak(`Step ${currentStepIndex + 1}: ${currentStep.text}`, ttsVoice);
         }
     }, [isOpen, currentStep, currentStepIndex, isTtsEnabled, speak, ttsVoice]);
-
+    
     useEffect(() => {
-        if (transcript && confirmationKeywords.some(kw => transcript.toLowerCase().includes(kw))) {
+        const lastWord = transcript.toLowerCase().split(' ').pop();
+        if (lastWord && confirmationKeywords.includes(lastWord)) {
             advanceStep();
         }
     }, [transcript, advanceStep]);
 
     useEffect(() => {
-        if (!isOpen) {
+        if (isOpen) {
             setCurrentStepIndex(0);
+            if (hasRecognitionSupport) startListening();
+        } else {
             cancelTTS();
             stopListening();
-        } else if (hasRecognitionSupport) {
-            startListening();
         }
-    }, [isOpen, cancelTTS, stopListening, hasRecognitionSupport, startListening]);
+    }, [isOpen, hasRecognitionSupport, startListening, stopListening, cancelTTS]);
 
     if (!isOpen || !procedure) return null;
 
@@ -65,7 +67,7 @@ const ProcedureRunnerModal: React.FC<ProcedureRunnerModalProps> = ({ isOpen, onC
                 </div>
                 <div className="mt-8 flex items-center justify-center space-x-4">
                     {hasRecognitionSupport && (
-                        <button onClick={isListening ? stopListening : startListening} className={`p-4 rounded-full transition-colors ${isListening ? 'bg-red-500 animate-pulse' : 'bg-gray-400 dark:bg-gray-600'}`}>
+                        <button onClick={isListening ? stopListening : startListening} title={isListening ? "Stop listening" : "Start listening"} className={`p-4 rounded-full transition-colors ${isListening ? 'bg-red-500 animate-pulse' : 'bg-gray-400 dark:bg-gray-600'}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                         </button>
                     )}
@@ -102,7 +104,7 @@ const CoPilotScreen: React.FC<CoPilotScreenProps> = ({ navigateTo, onClose, proc
 
     const handleAddTask = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newTaskName || !newTaskTime) return;
+        if (!newTaskName.trim() || !newTaskTime) return;
         const newTask: MissionTask = { id: Date.now(), time: newTaskTime, name: newTaskName, completed: false };
         const sortedTasks = [...tasks, newTask].sort((a, b) => a.time.localeCompare(b.time));
         onTasksUpdate(sortedTasks);
@@ -124,7 +126,7 @@ const CoPilotScreen: React.FC<CoPilotScreenProps> = ({ navigateTo, onClose, proc
         <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
           <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Co-Pilot Module</h1>
-              <button onClick={onClose} className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              <button onClick={onClose} aria-label="Close Co-Pilot screen" className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
           </div>
@@ -145,7 +147,7 @@ const CoPilotScreen: React.FC<CoPilotScreenProps> = ({ navigateTo, onClose, proc
                                     <input type="checkbox" checked={task.completed} onChange={() => onTaskComplete(task.id)} className="form-checkbox h-5 w-5 rounded bg-gray-300 dark:bg-gray-600 text-accent-cyan focus:ring-accent-cyan border-gray-400 dark:border-gray-500" />
                                     <span className="font-mono text-accent-cyan">{task.time}</span>
                                     <span className={`flex-grow text-gray-700 dark:text-gray-300 ${task.completed ? 'line-through opacity-50' : ''}`}>{task.name}</span>
-                                    <button onClick={() => handleDeleteTask(task.id)} className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 transition-opacity">
+                                    <button onClick={() => handleDeleteTask(task.id)} aria-label={`Delete task: ${task.name}`} className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-400 transition-opacity">
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                     </button>
                                 </li>
@@ -160,7 +162,7 @@ const CoPilotScreen: React.FC<CoPilotScreenProps> = ({ navigateTo, onClose, proc
                 <form onSubmit={handleAddTask} className="mt-4 flex space-x-2">
                     <input type="time" value={newTaskTime} onChange={e => setNewTaskTime(e.target.value)} required className="p-2 rounded-md bg-gray-200/50 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-600 w-28 font-mono"/>
                     <input type="text" value={newTaskName} onChange={e => setNewTaskName(e.target.value)} placeholder="New personal task..." required className="flex-grow p-2 rounded-md bg-gray-200/50 dark:bg-gray-800/50 border border-gray-300 dark:border-gray-600"/>
-                    <button type="submit" className="p-2 w-10 bg-accent-cyan text-white rounded-md font-bold text-lg">+</button>
+                    <button type="submit" aria-label="Add new task" className="p-2 w-10 bg-accent-cyan text-white rounded-md font-bold text-lg">+</button>
                 </form>
             </GlassCard>
             

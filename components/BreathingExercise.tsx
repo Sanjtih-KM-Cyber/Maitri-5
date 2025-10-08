@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 
 interface BreathingExerciseProps {
@@ -11,30 +12,34 @@ const BreathingExercise: React.FC<BreathingExerciseProps> = ({ isOpen, onClose }
 
   useEffect(() => {
     if (!isOpen) {
-        setText('Get Ready...');
-        setPhase('inhale');
-        return;
-    };
+      setText('Get Ready...');
+      setPhase('inhale');
+      return;
+    }
 
+    // FIX: Replaced NodeJS.Timeout with ReturnType<typeof setTimeout> for browser compatibility.
+    let cycleTimer: ReturnType<typeof setTimeout>;
+    
     const cycle = () => {
-        setText('Breathe In...');
-        setPhase('inhale');
-        setTimeout(() => {
-            setText('Hold');
-            setPhase('hold');
-            setTimeout(() => {
-                setText('Breathe Out...');
-                setPhase('exhale');
-            }, 4000); // Hold for 4 seconds
-        }, 4000); // Inhale for 4 seconds
+      setText('Breathe In...');
+      setPhase('inhale');
+      cycleTimer = setTimeout(() => {
+        setText('Hold');
+        setPhase('hold');
+        cycleTimer = setTimeout(() => {
+          setText('Breathe Out...');
+          setPhase('exhale');
+        }, 4000); // Hold for 4 seconds
+      }, 4000); // Inhale for 4 seconds
     };
 
-    const timer = setTimeout(cycle, 1500); // Initial delay
+    const initialDelayTimer = setTimeout(cycle, 1500);
     const interval = setInterval(cycle, 12000); // Full cycle: 4s inhale + 4s hold + 4s exhale = 12s
 
     return () => {
-        clearTimeout(timer);
-        clearInterval(interval);
+      clearTimeout(initialDelayTimer);
+      clearTimeout(cycleTimer);
+      clearInterval(interval);
     };
   }, [isOpen]);
   

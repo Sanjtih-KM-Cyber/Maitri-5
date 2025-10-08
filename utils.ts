@@ -1,3 +1,4 @@
+
 // utils.ts
 
 /**
@@ -63,6 +64,7 @@ export async function decodeAudioData(
   sampleRate: number,
   numChannels: number,
 ): Promise<AudioBuffer> {
+  // The input data is 16-bit PCM, so we create an Int16Array view on the buffer.
   const dataInt16 = new Int16Array(data.buffer);
   const frameCount = dataInt16.length / numChannels;
   const buffer = ctx.createBuffer(numChannels, frameCount, sampleRate);
@@ -70,6 +72,7 @@ export async function decodeAudioData(
   for (let channel = 0; channel < numChannels; channel++) {
     const channelData = buffer.getChannelData(channel);
     for (let i = 0; i < frameCount; i++) {
+      // Convert the 16-bit integer sample back to a floating-point value between -1.0 and 1.0.
       channelData[i] = dataInt16[i * numChannels + channel] / 32768.0;
     }
   }

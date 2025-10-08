@@ -62,7 +62,7 @@ const WellnessDashboard: React.FC<WellnessDashboardProps> = ({ dailyLogs, sympto
                                 <div className="w-full h-full bg-transparent"></div>
                            )}
                            <span className="absolute -bottom-5 text-xs text-gray-500 dark:text-gray-400">{date}</span>
-                           <div className="absolute bottom-full mb-2 w-max p-2 bg-black/70 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                           <div className="absolute bottom-full mb-2 w-max p-2 bg-black/70 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                                 {logs.length > 0 ? logs.map(l => l.mood).join(', ') : 'No data'}
                            </div>
                         </div>
@@ -73,7 +73,7 @@ const WellnessDashboard: React.FC<WellnessDashboardProps> = ({ dailyLogs, sympto
              <div className="mt-6">
                 <h3 className="font-semibold mb-2 text-gray-700 dark:text-gray-300">Symptom Calendar</h3>
                 <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => <div key={day} className="font-bold text-gray-500">{day}</div>)}
+                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <div key={i} className="font-bold text-gray-500">{day}</div>)}
                      {calendarDays.map(day => {
                         const dateString = format(day, 'yyyy-MM-dd');
                         const hasSymptom = symptomLogs.some(log => format(parseISO(log.date), 'yyyy-MM-dd') === dateString);

@@ -1,5 +1,4 @@
 
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Screen, CaptainLog } from '../types.ts';
 import GlassCard from '../components/GlassCard.tsx';
@@ -43,19 +42,6 @@ const StorytellerScreen: React.FC<StorytellerScreenProps> = ({ navigateTo, onClo
         } catch (err) { console.error("Error accessing camera/mic:", err); }
     }, []);
     
-    // Cleanup effect to ensure camera stream is released on component unmount
-    useEffect(() => {
-        return () => {
-            streamRef.current?.getTracks().forEach(track => track.stop());
-        };
-    }, []);
-    
-    useEffect(() => {
-        if (isCameraOpen && videoRef.current && streamRef.current) {
-            videoRef.current.srcObject = streamRef.current;
-        }
-    }, [isCameraOpen]);
-    
     const closeCamera = useCallback(() => {
         streamRef.current?.getTracks().forEach(track => track.stop());
         streamRef.current = null;
@@ -63,6 +49,12 @@ const StorytellerScreen: React.FC<StorytellerScreenProps> = ({ navigateTo, onClo
         setIsRecording(false);
         setCaptureMode(null);
     }, []);
+
+    useEffect(() => {
+        if (isCameraOpen && videoRef.current && streamRef.current) {
+            videoRef.current.srcObject = streamRef.current;
+        }
+    }, [isCameraOpen]);
 
     const handlePhotoCapture = useCallback(() => {
         if (videoRef.current) {
@@ -80,9 +72,7 @@ const StorytellerScreen: React.FC<StorytellerScreenProps> = ({ navigateTo, onClo
             const recorder = new MediaRecorder(streamRef.current, { mimeType: 'video/webm' });
             mediaRecorderRef.current = recorder;
             recorder.ondataavailable = (event) => {
-                if (event.data.size > 0) {
-                    recordedChunksRef.current.push(event.data);
-                }
+                if (event.data.size > 0) recordedChunksRef.current.push(event.data);
             };
             recorder.onstop = () => {
                 const videoBlob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
@@ -101,23 +91,25 @@ const StorytellerScreen: React.FC<StorytellerScreenProps> = ({ navigateTo, onClo
 
 
   const handleSave = async () => {
-    if ((!logText && !photo && !video) || isSaving) {
-        return;
-    }
+    if ((!logText.trim() && !photo && !video) || isSaving) return;
     
     setIsSaving(true);
-    const logData: Omit<CaptainLog, 'id' | 'date'> = { 
-        text: logText, 
-        photo: photo ? await blobToDataURL(photo) : undefined, 
-        video: video ? await blobToDataURL(video) : undefined 
-    };
-    await onSaveLog(logData);
+    try {
+        const logData: Omit<CaptainLog, 'id' | 'date'> = { 
+            text: logText, 
+            photo: photo ? await blobToDataURL(photo) : undefined, 
+            video: video ? await blobToDataURL(video) : undefined 
+        };
+        await onSaveLog(logData);
 
-    setLogText(''); 
-    setPhoto(null); 
-    setVideo(null);
-    setIsSaving(false);
-    // Add a success confirmation if desired, e.g., using a toast
+        setLogText(''); 
+        setPhoto(null); 
+        setVideo(null);
+    } catch (error) {
+        console.error("Failed to save log:", error);
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const handleGenerateSummary = async () => {
@@ -127,6 +119,7 @@ const StorytellerScreen: React.FC<StorytellerScreenProps> = ({ navigateTo, onClo
         const logHistory = pastLogs.slice(-7).map(log => `On ${new Date(log.date).toLocaleDateString()}, the log was: "${log.text}"`).join('\n\n');
         if (logHistory.length === 0) {
             setSummary("No past logs available to summarize. Write a few entries first!");
+            setIsGeneratingSummary(false);
             return;
         }
         const systemInstruction = "You are an AI assistant analyzing a captain's log. Read the following entries and provide a concise, semi-formal, third-person summary highlighting key activities, expressed sentiments, and overall tone for the week.";
@@ -140,7 +133,7 @@ const StorytellerScreen: React.FC<StorytellerScreenProps> = ({ navigateTo, onClo
   };
   
   const handleMessageAssist = () => {
-    navigateTo(Screen.Chat, "I need help writing a message home. I'm feeling a bit tired. Can you help me draft something based on my thoughts?");
+    navigateTo(Screen.Chat, "I need help writing a message home. Can you help me draft something based on my thoughts?");
   }
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -160,7 +153,7 @@ const StorytellerScreen: React.FC<StorytellerScreenProps> = ({ navigateTo, onClo
         )}
         <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Storyteller: Captain's Log</h1>
-            <button onClick={onClose} className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={onClose} aria-label="Close Storyteller screen" className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
@@ -198,7 +191,7 @@ const StorytellerScreen: React.FC<StorytellerScreenProps> = ({ navigateTo, onClo
             
             <GlassCard className="p-6">
                 <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Earth Link</h2>
-                <p className="mb-4 text-gray-600 dark:text-gray-300">Feeling too tired to write? Let MAITRI help you craft a message to your family.</p>
+                <p className="mb-4 text-gray-600 dark:text-gray-300">Feeling tired? Let MAITRI help you craft a message to your family.</p>
                 <button onClick={handleMessageAssist} className="w-full bg-accent-cyan/80 text-white font-bold py-2 px-4 rounded-lg hover:bg-cyan-500 transition-colors">Draft Message to Earth (AI Assisted)</button>
             </GlassCard>
         </div>

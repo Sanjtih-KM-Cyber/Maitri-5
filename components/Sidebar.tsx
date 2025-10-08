@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Screen, MassProtocol } from '../types.ts';
+import { Screen } from '../types.ts';
 
 interface SidebarProps {
   currentScreen: Screen;
@@ -21,10 +22,11 @@ const NavItem: React.FC<{
                 ? 'bg-accent-cyan text-white shadow-lg'
                 : 'text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
         }`}
-        title={label}
+        title={isExpanded ? '' : label}
+        aria-label={label}
     >
         <span className="flex-shrink-0 w-6 h-6">{icon}</span>
-        <span className={`ml-4 font-semibold transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+        <span className={`ml-4 font-semibold whitespace-nowrap transition-opacity duration-200 ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             {label}
         </span>
     </button>
@@ -36,13 +38,13 @@ const Sidebar: React.FC<SidebarProps> = ({ currentScreen, navigateTo }) => {
     return (
         <aside className={`flex flex-col bg-gray-200/50 dark:bg-gray-900/50 backdrop-blur-lg p-4 transition-all duration-300 ease-in-out ${isExpanded ? 'w-64' : 'w-20'}`}>
             <div className={`flex items-center mb-8 ${isExpanded ? 'justify-between' : 'justify-center'}`}>
-                 <div className={`flex items-center space-x-2 text-2xl font-bold text-gray-800 dark:text-white overflow-hidden transition-opacity duration-200 ${isExpanded ? 'opacity-100 whitespace-nowrap' : 'opacity-0'}`}>
+                 <div className={`flex items-center space-x-2 text-2xl font-bold text-gray-800 dark:text-white overflow-hidden transition-opacity duration-200 ${isExpanded ? 'opacity-100 whitespace-nowrap' : 'opacity-0 pointer-events-none'}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-accent-cyan flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                     <span>MAITRI</span>
                 </div>
-                <button onClick={() => setIsExpanded(!isExpanded)} className="p-2 rounded-full hover:bg-gray-300 dark:hover:bg-gray-700">
+                <button onClick={() => setIsExpanded(!isExpanded)} aria-label={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'} className="p-2 rounded-full hover:bg-gray-300 dark:hover:bg-gray-700">
                     {isExpanded ? (
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                     ) : (
@@ -72,8 +74,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentScreen, navigateTo }) => {
                     label="Storyteller"
                     icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>}
                 />
+                 <NavItem
+                    screen={Screen.Recreation} currentScreen={currentScreen} navigateTo={navigateTo} isExpanded={isExpanded}
+                    label="Recreation"
+                    icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                />
             </nav>
-
         </aside>
     );
 };

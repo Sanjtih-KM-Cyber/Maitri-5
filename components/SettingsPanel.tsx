@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import ChangePasswordModal from './ChangePasswordModal.tsx';
 import ChangeSecurityQuestionModal from './ChangeSecurityQuestionModal.tsx';
 
@@ -19,7 +20,9 @@ const Toggle: React.FC<{ label: string; enabled: boolean; onChange: () => void }
     <span className="text-gray-700 dark:text-gray-300">{label}</span>
     <button
       onClick={onChange}
-      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${enabled ? 'bg-accent-cyan' : 'bg-gray-300 dark:bg-gray-600'}`}
+      role="switch"
+      aria-checked={enabled}
+      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-cyan ${enabled ? 'bg-accent-cyan' : 'bg-gray-300 dark:bg-gray-600'}`}
     >
       <span
         className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${enabled ? 'translate-x-6' : 'translate-x-1'}`}
@@ -49,15 +52,19 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
       <div
         className={`fixed inset-0 z-50 transition-opacity duration-300 ${isOpen ? 'bg-black/60' : 'bg-transparent pointer-events-none'}`}
         onClick={onClose}
+        aria-hidden={!isOpen}
       >
         <div
           onClick={(e) => e.stopPropagation()}
           className={`fixed top-0 right-0 h-full w-80 max-w-[90vw] bg-gray-100 dark:bg-space-dark shadow-2xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'} border-l border-slate-300/20 dark:border-slate-500/20 flex flex-col`}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settings-title"
         >
           <div className="p-6 flex-grow overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Settings</h2>
-              <button onClick={onClose} className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              <h2 id="settings-title" className="text-2xl font-bold text-gray-800 dark:text-white">Settings</h2>
+              <button onClick={onClose} aria-label="Close settings panel" className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>

@@ -1,8 +1,8 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-// Fix: Add a type definition for the SpeechRecognition API to avoid TypeScript errors,
-// as it may not be included in default TS DOM library files.
-interface SpeechRecognition {
+// Type definition for the SpeechRecognition API to ensure type safety.
+interface SpeechRecognition extends EventTarget {
   continuous: boolean;
   lang: string;
   interimResults: boolean;
@@ -13,48 +13,46 @@ interface SpeechRecognition {
   stop: () => void;
 }
 
-// Fix: Correctly handle vendor-prefixed SpeechRecognition API and avoid TypeScript type conflicts.
+// Handle vendor-prefixed SpeechRecognition API.
 const SpeechRecognitionAPI =
   (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
   
-// This hook creates a single recognition instance and manages its lifecycle.
-// It is safer than a module-level singleton instance.
 export const useSpeechRecognition = () => {  
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   
-  // Use a ref to hold the recognition instance.
-  // This avoids re-creating it on every render and keeps it tied to the component's lifecycle.
+  // Use a ref to hold the recognition instance, tied to the component's lifecycle.
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
-    if (!SpeechRecognitionAPI) return; // Don't run if the API is not supported.
-
-    // Initialize the recognition instance if it doesn't exist.
-    if (!recognitionRef.current) {
-        recognitionRef.current = new SpeechRecognitionAPI();
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.lang = 'en-US';
-        recognitionRef.current.interimResults = true;
+    if (!SpeechRecognitionAPI) {
+        console.warn("Speech Recognition API not supported in this browser.");
+        return;
     }
+
+    recognitionRef.current = new SpeechRecognitionAPI();
     const recognition = recognitionRef.current;
 
+    recognition.continuous = true;
+    recognition.lang = 'en-US';
+    recognition.interimResults = true;
+
     recognition.onresult = (event: any) => {
-      let currentTranscript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        currentTranscript += event.results[i][0].transcript;
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        }
       }
-      setTranscript(currentTranscript);
+      setTranscript(prev => prev + finalTranscript);
     };
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
-      // Ensure listening state is turned off on error.
       setIsListening(false);
     };
     
     recognition.onend = () => {
-      // Ensure listening state is turned off when recognition ends.
       setIsListening(false);
     };
 
@@ -64,7 +62,7 @@ export const useSpeechRecognition = () => {
         recognitionRef.current.stop();
       }
     };
-  }, []); // Empty dependency array ensures this setup runs only once per component instance.
+  }, []);
 
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
@@ -74,6 +72,7 @@ export const useSpeechRecognition = () => {
         setIsListening(true);
       } catch(e) {
         console.error("Error starting speech recognition:", e);
+        // This can happen if start() is called again before it has truly stopped.
         setIsListening(false);
       }
     }
@@ -82,7 +81,7 @@ export const useSpeechRecognition = () => {
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
       recognitionRef.current.stop();
-      // onend callback will set isListening to false
+      setIsListening(false); // Force state change immediately
     }
   }, [isListening]);
 

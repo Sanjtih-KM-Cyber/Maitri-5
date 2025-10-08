@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -12,6 +12,7 @@ const InputField: React.FC<{ label: string; id: string; type: string }> = ({ lab
         <input 
             type={type} 
             id={id}
+            required
             className="w-full p-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-accent-cyan focus:border-accent-cyan"
         />
     </div>
@@ -22,7 +23,8 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Logic to change password would go here
+    // In a real app, this would call an API service.
+    // For now, we'll just show an alert and close the modal.
     alert("Password change functionality is mocked.");
     onClose();
   };
@@ -31,13 +33,16 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
     <div 
         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" 
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-password-title"
     >
       <form
         onSubmit={handleSubmit}
         className="flex flex-col space-y-4 p-6 bg-gray-100 dark:bg-space-dark rounded-lg shadow-2xl border border-gray-300 dark:border-slate-500/20 w-11/12 max-w-sm" 
         onClick={e => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Change Password</h2>
+        <h2 id="change-password-title" className="text-2xl font-bold text-gray-800 dark:text-white">Change Password</h2>
         
         <InputField label="Current Password" id="current-password" type="password" />
         <InputField label="New Password" id="new-password" type="password" />

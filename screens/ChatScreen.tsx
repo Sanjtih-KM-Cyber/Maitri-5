@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Screen, ChatMessage, SymptomLog, MissionTask } from '../types.ts';
 import { useChatHistory } from '../hooks/useChatHistory.ts';
@@ -5,7 +6,6 @@ import { generateChatResponseWithTools, generateCreativeTextWithColor } from '..
 import { useTTS } from '../hooks/useTTS.ts';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition.ts';
 import GlassCard from '../components/GlassCard.tsx';
-// Fix: Import maitriApiService from the correct file and use the correct service name.
 import { maitriApiService } from '../services/maitriApiService.ts';
 
 interface ChatScreenProps {
@@ -16,7 +16,7 @@ interface ChatScreenProps {
   isTtsEnabled: boolean;
   ttsVoice: string;
   onSensoryColorChange: (color: string) => void;
-  onSymptomLog: (log: Omit<SymptomLog, 'id' | 'date' | 'photo' | 'video'>) => Promise<void>;
+  onSymptomLog: (log: Omit<SymptomLog, 'id' | 'date' | 'photo' | 'video'>) => Promise<any>;
   onAddTask: (task: Omit<MissionTask, 'id' | 'completed'>) => Promise<void>;
 }
 
@@ -50,8 +50,10 @@ const ChatMessageRenderer: React.FC<{ text: string }> = ({ text }) => {
   });
   
   // Group consecutive list items into a single <ul>
-  const groupedElements = [];
-  let currentList = [];
+  // FIX: Replaced JSX.Element with React.ReactElement as JSX namespace was not found.
+  const groupedElements: React.ReactElement[] = [];
+  // FIX: Replaced JSX.Element with React.ReactElement as JSX namespace was not found.
+  let currentList: React.ReactElement[] = [];
   for (const element of elements) {
     if (element.type === 'li') {
       currentList.push(element);
@@ -60,7 +62,8 @@ const ChatMessageRenderer: React.FC<{ text: string }> = ({ text }) => {
         groupedElements.push(<ul key={groupedElements.length} className="list-disc list-inside space-y-1 my-2 pl-2">{currentList}</ul>);
         currentList = [];
       }
-      groupedElements.push(element);
+      // FIX: Replaced JSX.Element with React.ReactElement as JSX namespace was not found.
+      groupedElements.push(element as React.ReactElement);
     }
   }
   if (currentList.length > 0) {
@@ -111,12 +114,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
     setInput('');
     setIsLoading(true);
-    
+    setReplyTo(null);
+
+    // Sensory command handling
     if (messageText.toLowerCase().startsWith('/sensory ')) {
       const prompt = messageText.substring(9);
       const systemMessage: ChatMessage = { id: `sys-${Date.now()}`, text: `Generating sensory experience for: "${prompt}"`, sender: 'system', timestamp: new Date().toISOString() };
       addMessage(systemMessage);
-
       try {
         const { description, dominant_color_hex } = await generateCreativeTextWithColor(prompt);
         onSensoryColorChange(dominant_color_hex);
@@ -128,12 +132,12 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         const errorMessage: ChatMessage = { id: `model-${Date.now()}`, text: "I had trouble generating that sensory experience.", sender: 'model', timestamp: new Date().toISOString() };
         addMessage(errorMessage);
         if (isTtsEnabled) speak(errorMessage.text, ttsVoice);
-      } finally {
-        setIsLoading(false);
       }
+      setIsLoading(false);
       return;
     }
 
+    // Regular chat message handling
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       text: messageText,
@@ -141,13 +145,13 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       timestamp: new Date().toISOString(),
       ...(replyTo && { replyTo: { id: replyTo.id, text: replyTo.text, sender: replyTo.sender } }),
     };
+    const currentHistory = [...messages, userMessage];
     addMessage(userMessage);
-    setReplyTo(null);
     
     try {
-      const history = [...messages, userMessage];
-      const response = await generateChatResponseWithTools(history, astronautName);
+      const response = await generateChatResponseWithTools(currentHistory, astronautName);
       
+      // Handle function calls if present
       const functionCalls = response.functionCalls;
       if (functionCalls && functionCalls.length > 0) {
         for (const fc of functionCalls) {
@@ -172,14 +176,17 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
                     from: astronautName,
                     text: fc.args.messageContent,
                 });
-                confirmationText = `I've logged your message for the Base Station archives and sent it to Earthlink.`;
+                confirmationText = `I've sent your message to Earthlink and saved a copy to the ship's archives.`;
             }
             const systemMessage: ChatMessage = { id: `sys-${Date.now()}`, text: confirmationText, sender: 'system', timestamp: new Date().toISOString() };
             addMessage(systemMessage);
             if (isTtsEnabled) speak(confirmationText, ttsVoice);
         }
-      } else {
-        const responseText = response.text;
+      }
+      
+      // Handle text response if present
+      const responseText = response.text;
+      if (responseText) {
         const modelMessage: ChatMessage = {
             id: `model-${Date.now()}`,
             text: responseText,
@@ -199,17 +206,18 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
         timestamp: new Date().toISOString(),
       };
       addMessage(errorMessage);
+       if (isTtsEnabled) speak(errorMessage.text, ttsVoice);
     } finally {
       setIsLoading(false);
     }
   }, [input, isLoading, addMessage, isTtsEnabled, speak, ttsVoice, messages, onSensoryColorChange, navigateTo, replyTo, astronautName, onSymptomLog, onAddTask, stopListening, isListening]);
   
   useEffect(() => {
-    if (initialMessage && !initialMessageSent.current) {
+    if (initialMessage && !initialMessageSent.current && messages.length > 0) {
         initialMessageSent.current = true;
         handleSend(initialMessage);
     }
-  }, [initialMessage, handleSend]);
+  }, [initialMessage, handleSend, messages]);
   
   const handleMicClick = () => {
     cancelTTS();
@@ -223,7 +231,6 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
 
   const handleCopyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    // You could add a toast notification here for feedback
   };
 
   const MessageBubble: React.FC<{ msg: ChatMessage }> = ({ msg }) => {
@@ -249,8 +256,8 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
           
           {showActions && (
              <div className={`absolute top-0 flex space-x-1 p-1 bg-gray-500/20 rounded-full backdrop-blur-sm -translate-y-1/2 transition-opacity ${isUser ? 'left-2' : 'right-2'}`}>
-                <button onClick={() => setReplyTo(msg)} className="p-1 hover:bg-black/20 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button>
-                <button onClick={() => handleCopyToClipboard(msg.text)} className="p-1 hover:bg-black/20 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
+                <button onClick={() => setReplyTo(msg)} title="Reply" className="p-1 hover:bg-black/20 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" /></svg></button>
+                <button onClick={() => handleCopyToClipboard(msg.text)} title="Copy" className="p-1 hover:bg-black/20 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg></button>
              </div>
           )}
         </div>
@@ -262,7 +269,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
     <div className="flex flex-col h-full max-w-4xl mx-auto animate-fade-in">
         <div className="flex justify-between items-center p-4 border-b border-gray-300/50 dark:border-slate-500/20 flex-shrink-0">
             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">MAITRI Chat</h1>
-            <button onClick={onClose} className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <button onClick={onClose} aria-label="Close chat" className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
         </div>
@@ -278,14 +285,14 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
       <div className="p-4 border-t border-gray-300/50 dark:border-slate-500/20 flex-shrink-0">
          {replyTo && (
           <div className="relative p-2 mb-2 bg-gray-200 dark:bg-gray-700 rounded-lg text-sm">
-            <button onClick={() => setReplyTo(null)} className="absolute top-1 right-1 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <button onClick={() => setReplyTo(null)} aria-label="Cancel reply" className="absolute top-1 right-1 p-1 rounded-full hover:bg-black/10 dark:hover:bg-white/10"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg></button>
             <p>Replying to <span className="font-bold capitalize">{replyTo.sender}</span></p>
             <p className="truncate italic">"{replyTo.text}"</p>
           </div>
          )}
          <GlassCard className="p-2 flex items-center space-x-2">
             {hasRecognitionSupport && (
-                <button onClick={handleMicClick} className={`p-3 rounded-full transition-colors flex-shrink-0 ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}>
+                <button onClick={handleMicClick} title={isListening ? 'Stop listening' : 'Start listening'} className={`p-3 rounded-full transition-colors flex-shrink-0 ${isListening ? 'bg-red-500 text-white animate-pulse' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-300/50 dark:hover:bg-gray-600/50'}`}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
                 </button>
             )}
@@ -293,7 +300,7 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
              rows={1}
              value={input}
              onChange={(e) => setInput(e.target.value)}
-             onKeyPress={(e) => {
+             onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     handleSend();
@@ -302,8 +309,9 @@ const ChatScreen: React.FC<ChatScreenProps> = ({
              placeholder="Ask MAITRI anything..."
              className="w-full bg-transparent outline-none p-2 resize-none max-h-24 scrollbar-thin"
              disabled={isLoading}
+             aria-label="Chat input"
            />
-           <button onClick={() => handleSend()} disabled={isLoading || !input} className="p-3 bg-accent-cyan text-white rounded-full disabled:bg-gray-500 flex-shrink-0">
+           <button onClick={() => handleSend()} disabled={isLoading || !input} aria-label="Send message" className="p-3 bg-accent-cyan text-white rounded-full disabled:bg-gray-500 flex-shrink-0">
              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
            </button>
          </GlassCard>

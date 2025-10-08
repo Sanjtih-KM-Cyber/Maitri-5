@@ -1,17 +1,18 @@
-import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { UserType } from '../../../types';
+import express from 'express';
+import type { UserType } from '../../../types';
 
-export interface AuthRequest extends Request {
+// FIX: Changed AuthRequest to extend express.Request directly to avoid type conflicts
+// with global types (e.g., from DOM lib), ensuring properties like .body, .params, and .header are available.
+export interface AuthRequest extends express.Request {
   user?: {
     id: string;
     name: string;
     type: UserType;
   };
-}
+};
 
-// FIX: Use express.Response and express.NextFunction to ensure correct types.
-export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const auth = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
   const authHeader = req.header('Authorization');
 
   if (!authHeader) {
@@ -36,8 +37,7 @@ export const auth = (req: AuthRequest, res: Response, next: NextFunction) => {
   }
 };
 
-// FIX: Use express.Response and express.NextFunction to ensure correct types.
-export const adminAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const adminAuth = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
     if (req.user && req.user.type === 'admin') {
         next();
     } else {

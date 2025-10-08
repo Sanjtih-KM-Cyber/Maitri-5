@@ -1,7 +1,6 @@
 
 import React, { useEffect } from 'react';
 import { EarthlinkMessage } from '../types.ts';
-// Fix: Import maitriApiService from the correct file and use the correct service name.
 import { maitriApiService } from '../services/maitriApiService.ts';
 
 interface EarthlinkModalProps {
@@ -13,11 +12,9 @@ interface EarthlinkModalProps {
 
 const EarthlinkModal: React.FC<EarthlinkModalProps> = ({ isOpen, onClose, message, onMessageViewed }) => {
     useEffect(() => {
-        if (isOpen && message) {
+        if (isOpen && message && !message.viewed) {
             maitriApiService.markEarthlinkMessageAsViewed(message.id)
-                .then(() => {
-                    onMessageViewed();
-                })
+                .then(onMessageViewed)
                 .catch(err => console.error("Failed to mark message as viewed:", err));
         }
     }, [isOpen, message, onMessageViewed]);
@@ -28,12 +25,15 @@ const EarthlinkModal: React.FC<EarthlinkModalProps> = ({ isOpen, onClose, messag
     <div 
         className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in" 
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="earthlink-title"
     >
       <div 
         className="flex flex-col space-y-4 p-6 bg-gray-100 dark:bg-space-dark/80 rounded-lg shadow-2xl border border-gray-300 dark:border-slate-500/20 w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto scrollbar-thin"
         onClick={e => e.stopPropagation()}
       >
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white text-center">Message from {message.from}</h2>
+        <h2 id="earthlink-title" className="text-2xl font-bold text-gray-800 dark:text-white text-center">Message from {message.from}</h2>
         
         {message.videoUrl && (
             <div className="w-full aspect-video bg-black rounded-md flex items-center justify-center text-gray-400">

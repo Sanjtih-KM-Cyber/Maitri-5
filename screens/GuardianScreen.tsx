@@ -1,12 +1,10 @@
 
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Screen, SymptomLog, DoctorAdvice, DailyCheckInLog, MassProtocol } from '../types.ts';
 import GlassCard from '../components/GlassCard.tsx';
 import WellnessDashboard from '../components/WellnessDashboard.tsx';
 import BreathingExercise from '../components/BreathingExercise.tsx';
 import { blobToDataURL } from '../utils.ts';
-// Fix: Import maitriApiService from the correct file and use the correct service name.
 import { maitriApiService } from '../services/maitriApiService.ts';
 
 interface GuardianScreenProps {
@@ -21,11 +19,11 @@ interface GuardianScreenProps {
   massProtocols: MassProtocol[];
   onMassProtocolClick: (protocol: MassProtocol) => void;
   onDataRefresh: () => void;
-  screenContext?: any;
+  screenContext?: { openCameraForLog?: { mediaType: 'photo' | 'video', logId?: string } };
 }
 
 const GuardianScreen: React.FC<GuardianScreenProps> = ({ 
-  navigateTo, onClose, symptomLogs, doctorAdvice, dailyLogs, onSymptomLog, 
+  onClose, symptomLogs, doctorAdvice, dailyLogs, onSymptomLog, 
   onToggleSleepSession, isSleepSessionActive, massProtocols, onMassProtocolClick,
   onDataRefresh, screenContext
 }) => {
@@ -60,12 +58,20 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
         setIsCameraOpen(true);
     } catch (err) { console.error("Error accessing camera/mic:", err); }
   }, []);
+
+  const closeCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach(track => track.stop());
+    streamRef.current = null;
+    setIsCameraOpen(false);
+    setIsRecording(false);
+    setCaptureMode(null);
+    setMediaContext(null);
+  }, []);
   
   // Handle context from voice assistant or other navigation
   useEffect(() => {
     if (screenContext?.openCameraForLog) {
         const { mediaType, logId } = screenContext.openCameraForLog;
-        // If an explicit logId is provided, use it. Otherwise, fall back to the most recent log.
         const targetLogId = logId || [...symptomLogs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]?.id;
         
         if (targetLogId) {
@@ -75,28 +81,11 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
     }
   }, [screenContext, symptomLogs, openCamera]);
 
-  // Cleanup effect to ensure camera stream is released on component unmount
-  useEffect(() => {
-    return () => {
-      streamRef.current?.getTracks().forEach(track => track.stop());
-    };
-  }, []);
-
-  
   useEffect(() => {
     if (isCameraOpen && videoRef.current && streamRef.current) {
         videoRef.current.srcObject = streamRef.current;
     }
   }, [isCameraOpen]);
-
-  const closeCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach(track => track.stop());
-    streamRef.current = null;
-    setIsCameraOpen(false);
-    setIsRecording(false);
-    setCaptureMode(null);
-    setMediaContext(null); // Clear context on close
-  }, []);
 
   const handlePhotoCapture = useCallback(async () => {
     if (videoRef.current) {
@@ -154,18 +143,23 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
     if (!symptom || isLogging) return;
     
     setIsLogging(true);
-    const logData: Omit<SymptomLog, 'id' | 'date'> = { 
-        symptom, 
-        severity, 
-        notes, 
-        photo: photo ? await blobToDataURL(photo) : undefined,
-        video: video ? await blobToDataURL(video) : undefined,
-    };
-    
-    await onSymptomLog(logData);
+    try {
+        const logData: Omit<SymptomLog, 'id' | 'date'> = { 
+            symptom, 
+            severity, 
+            notes, 
+            photo: photo ? await blobToDataURL(photo) : undefined,
+            video: video ? await blobToDataURL(video) : undefined,
+        };
+        
+        await onSymptomLog(logData);
 
-    setSymptom(''); setSeverity('mild'); setNotes(''); setPhoto(null); setVideo(null);
-    setIsLogging(false);
+        setSymptom(''); setSeverity('mild'); setNotes(''); setPhoto(null); setVideo(null);
+    } catch (error) {
+        console.error("Failed to submit symptom log:", error);
+    } finally {
+        setIsLogging(false);
+    }
   };
 
   const getAdviceForLog = (logId: string) => doctorAdvice.find(advice => advice.symptomLogId === logId);
@@ -186,7 +180,7 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
         )}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Guardian Health Monitor</h1>
-          <button onClick={onClose} className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+          <button onClick={onClose} aria-label="Close Guardian screen" className="p-2 rounded-full text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         </div>
@@ -234,7 +228,7 @@ const GuardianScreen: React.FC<GuardianScreenProps> = ({
                  {massProtocols.length > 0 ? massProtocols.map(protocol => (
                     <button key={protocol.id} onClick={() => onMassProtocolClick(protocol)} className="w-full p-3 bg-accent-cyan/80 text-white rounded-lg font-bold hover:bg-cyan-500 transition-colors text-left">
                         {protocol.name}
-                        <span className="block text-xs font-normal opacity-80">{protocol.sets} Sets / {protocol.duration} min work / {protocol.rest}s rest</span>
+                        <span className="block text-xs font-normal opacity-80">{protocol.sets} Sets / {protocol.duration}s work / {protocol.rest}s rest</span>
                     </button>
                  )) : <p className="text-gray-500 italic">No M.A.S.S. protocols assigned.</p>}
               </div>

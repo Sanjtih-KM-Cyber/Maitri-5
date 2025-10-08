@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Screen, AstronautData, UserData, UserType, SymptomLog, CaptainLog, Mood, SleepQuality, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, ChatMessage } from './types.ts';
 import { ThemeContext, Theme } from './contexts/ThemeContext.ts';
@@ -14,8 +13,9 @@ import StorytellerScreen from './screens/StorytellerScreen.tsx';
 import ChatScreen from './screens/ChatScreen.tsx';
 import LandingScreen from './screens/LandingScreen.tsx';
 import AuthScreen from './screens/AuthScreen.tsx';
-// Fix: Changed to a named import to match the updated export in AdminDashboardScreen.
 import { AdminDashboardScreen } from './screens/AdminDashboardScreen.tsx';
+import RecreationScreen from './screens/RecreationScreen.tsx';
+
 
 // Components
 import Sidebar from './components/Sidebar.tsx';
@@ -35,6 +35,14 @@ interface ToastProps {
   onDismiss: () => void;
   type?: 'alert' | 'error';
 }
+
+const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 
 // Toast component for mission alerts and errors
 const Toast: React.FC<ToastProps> = ({ message, show, onDismiss, type = 'alert' }) => {
@@ -76,7 +84,6 @@ const App: React.FC = () => {
     const [showAlert, setShowAlert] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [showError, setShowError] = useState(false);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
     const [isSleepSessionActive, setIsSleepSessionActive] = useState(false);
     const [isVoiceAssistantOpen, setIsVoiceAssistantOpen] = useState(false);
 
@@ -85,24 +92,25 @@ const App: React.FC = () => {
     const [maitriVoice, setMaitriVoice] = useState('Zephyr'); // For Gemini Voice Assistant and all other TTS
 
     // Hooks
+    const { speak } = useTTS();
+
     const navigateTo = useCallback((screen: Screen, context: any = null) => {
         setCurrentScreen(screen);
         setScreenContext(context);
         setIsVoiceAssistantOpen(false); // Close assistant on navigation
     }, []);
-    const { speak } = useTTS();
 
-    const displayError = (message: string) => {
+    const displayError = useCallback((message: string) => {
         setErrorMessage(message);
         setShowError(true);
-    }
+    }, []);
 
     const handleLogout = useCallback(() => {
         removeToken();
         setIsAuthenticated(false);
         setUserType(null);
         setAstronautData(null);
-        setCurrentScreen(Screen.Home);
+        setCurrentScreen(Screen.Home); // Go back to a neutral screen
     }, []);
 
     const refreshAstronautData = useCallback(async () => {
@@ -115,27 +123,28 @@ const App: React.FC = () => {
             displayError("Could not sync with mission control. Please check connection.");
             handleLogout(); // If we can't get data, the token might be invalid, so log out.
         }
-    }, [handleLogout]);
+    }, [handleLogout, displayError]);
     
     // Initial Auth Check
     useEffect(() => {
         const checkAuthStatus = async () => {
+            setIsLoading(true);
             const token = getToken();
             if (token) {
-                setIsAuthenticated(true);
-                // The user type will be determined when we fetch data.
-                // For an admin, astronautData will be null but that's handled.
-                setIsLoading(true);
-                await refreshAstronautData();
-                setIsLoading(false);
+                try {
+                    await refreshAstronautData();
+                    setIsAuthenticated(true);
+                } catch (e) {
+                    // refreshAstronautData already handles logout on failure
+                    setIsAuthenticated(false);
+                }
             } else {
                 setIsAuthenticated(false);
-                setIsLoading(false);
             }
+            setIsLoading(false);
         };
         checkAuthStatus();
     }, [refreshAstronautData]);
-
 
     // Theming Effect
     useEffect(() => {
@@ -149,11 +158,14 @@ const App: React.FC = () => {
 
     // Global keyboard listener for Voice Assistant
     const handleKeyDown = useCallback((event: KeyboardEvent) => {
+        // Don't interfere if a modal is open or if user is typing
+        if (event.target !== document.body && (event.target as HTMLElement).closest('.fixed.inset-0')) return;
+        const activeEl = document.activeElement;
+        if (activeEl && (activeEl.tagName.toLowerCase() === 'input' || activeEl.tagName.toLowerCase() === 'textarea')) {
+            return;
+        }
+
         if (event.key === 'm' && !isVoiceAssistantOpen) {
-            const activeEl = document.activeElement;
-            if (activeEl && (activeEl.tagName.toLowerCase() === 'input' || activeEl.tagName.toLowerCase() === 'textarea')) {
-                return; // Don't open if user is typing
-            }
             event.preventDefault();
             setIsVoiceAssistantOpen(true);
         } else if (event.key === 'Escape' && isVoiceAssistantOpen) {
@@ -164,18 +176,10 @@ const App: React.FC = () => {
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-        };
+        return () => window.removeEventListener('keydown', handleKeyDown);
     }, [handleKeyDown]);
     
     const toggleTheme = () => setTheme(current => current === 'dark' ? 'light' : current === 'light' ? 'circadian' : 'dark');
-
-    // Mission Alert Logic
-    useEffect(() => {
-        if (!astronautData) return;
-    }, [astronautData]);
-
 
     // Handlers
     const handleLogin = async (name: string, pass: string, type: UserType): Promise<boolean> => {
@@ -190,7 +194,7 @@ const App: React.FC = () => {
             return true;
         } catch (error) {
             console.error("Login failed:", error);
-            displayError((error as Error).message);
+            displayError((error as Error).message || "Invalid credentials.");
             return false;
         } finally {
             setIsLoading(false);
@@ -210,8 +214,9 @@ const App: React.FC = () => {
     
     const handleDailyCheckIn = async (mood: Mood, sleep: SleepQuality) => {
       try {
-        await maitriApiService.addDailyCheckIn({ mood, sleep });
-        refreshAstronautData();
+        const checkInDate = getLocalDateString(new Date());
+        await maitriApiService.addDailyCheckIn({ mood, sleep, date: checkInDate });
+        await refreshAstronautData();
       } catch (error) { displayError("Failed to log daily check-in."); }
     };
     
@@ -273,10 +278,8 @@ const App: React.FC = () => {
         setIsSleepSessionActive(prev => {
             const nextState = !prev;
             setTheme(nextState ? 'circadian' : 'dark');
-            if (nextState) {
-                speak("Beginning sleep session.", maitriVoice);
-            } else {
-                speak("Sleep session ended.", maitriVoice);
+            if (isTtsEnabled) {
+                speak(nextState ? "Beginning sleep session." : "Sleep session ended.", maitriVoice);
             }
             return nextState;
         });
@@ -310,8 +313,9 @@ const App: React.FC = () => {
     if (!astronautData) {
         // This can happen briefly for an astronaut before data loads, or if there's an error.
         return (
-            <div className="h-screen w-screen flex flex-col items-center justify-center bg-space-dark text-white">
+            <div className="h-screen w-screen flex flex-col items-center justify-center bg-space-dark text-white p-4 text-center">
                 <p>Error: Could not load astronaut data.</p>
+                <p className="text-sm text-gray-400 mt-2">This may be due to a connection issue or an invalid session.</p>
                 <button onClick={handleLogout} className="mt-4 px-4 py-2 bg-red-600 rounded">Logout</button>
             </div>
         );
@@ -325,6 +329,7 @@ const App: React.FC = () => {
             case Screen.CoPilot: return <CoPilotScreen {...commonProps} procedures={astronautData.procedures} tasks={astronautData.missionTasks} onTasksUpdate={handleTasksUpdate} onTaskComplete={handleTaskComplete} isTtsEnabled={isTtsEnabled} ttsVoice={maitriVoice} />;
             case Screen.Storyteller: return <StorytellerScreen {...commonProps} onSaveLog={handleCaptainLog} pastLogs={astronautData.captainLogs} />;
             case Screen.Chat: return <ChatScreen {...commonProps} astronautName={astronautData.name} initialMessage={screenContext} isTtsEnabled={isTtsEnabled} ttsVoice={maitriVoice} onSensoryColorChange={handleSensoryColorChange} onSymptomLog={handleSymptomLog} onAddTask={handleAddTask} />;
+            case Screen.Recreation: return <RecreationScreen {...commonProps} />;
             case Screen.Home:
             default:
                 return <HomeScreen navigateTo={navigateTo} astronautData={astronautData} onDailyCheckIn={handleDailyCheckIn} missionTasks={astronautData.missionTasks} onDataRefresh={refreshAstronautData} />;

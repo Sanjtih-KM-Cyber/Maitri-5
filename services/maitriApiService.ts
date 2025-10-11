@@ -1,6 +1,7 @@
+
 // services/maitriApiService.ts
 import { apiService, getToken, saveToken, removeToken } from './apiService.ts';
-import { AstronautData, UserData, UserType, SymptomLog, CaptainLog, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, Mood, SleepQuality, EarthlinkMessage } from '../types.ts';
+import type { AstronautData, UserData, UserType, SymptomLog, CaptainLog, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, Mood, SleepQuality, EarthlinkMessage } from '../types.ts';
 
 // --- AUTH & USER MGMT ---
 const login = async (name: string, pass: string, type: UserType): Promise<{ token: string }> => {

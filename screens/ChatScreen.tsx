@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Screen, ChatMessage, SymptomLog, MissionTask } from '../types.ts';
+import { Screen } from '../types.ts';
+import type { ChatMessage, SymptomLog, MissionTask } from '../types.ts';
 import { useChatHistory } from '../hooks/useChatHistory.ts';
 import { generateChatResponseWithTools, generateCreativeTextWithColor } from '../services/geminiService.ts';
 import { useTTS } from '../hooks/useTTS.ts';

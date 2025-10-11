@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { AstronautData, SymptomLog, DoctorAdvice, MissionProcedure, MassProtocol, EarthlinkMessage } from '../types.ts';
+import type { AstronautData, SymptomLog, DoctorAdvice, MissionProcedure, MassProtocol, EarthlinkMessage } from '../types.ts';
 import { maitriApiService } from '../services/maitriApiService.ts';
 import Avatar from '../components/Avatar.tsx';
 import { blobToDataURL } from '../utils.ts';

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import GlassCard from '../components/GlassCard.tsx';
-import { UserData, UserType } from '../types.ts';
+import type { UserData, UserType } from '../types.ts';
 import ForgotPasswordModal from '../components/ForgotPasswordModal.tsx';
 
 interface AuthScreenProps {

@@ -1,6 +1,9 @@
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GoogleGenAI, LiveSession, LiveServerMessage, Modality, FunctionDeclaration, Type, Blob } from '@google/genai';
-import { Screen, SymptomLog, MissionTask } from '../types.ts';
+import { GoogleGenAI, Modality, Type } from '@google/genai';
+import type { LiveSession, LiveServerMessage, FunctionDeclaration, Blob } from '@google/genai';
+import { Screen } from '../types.ts';
+import type { SymptomLog, MissionTask } from '../types.ts';
 import { encode, decode, decodeAudioData } from '../utils.ts';
 import { generateCreativeTextWithColor, sendMessageToFamilyFunctionDeclaration, setSensoryImmersionFunctionDeclaration } from '../services/geminiService.ts';
 

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import GlassCard from './GlassCard.tsx';
-import { Mood, SleepQuality } from '../types.ts';
+import type { Mood, SleepQuality } from '../types.ts';
 
 interface DailyBriefingProps {
     astronautName: string;

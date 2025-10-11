@@ -1,7 +1,9 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Screen, AstronautData, UserData, UserType, SymptomLog, CaptainLog, Mood, SleepQuality, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, ChatMessage } from './types.ts';
-import { ThemeContext, Theme } from './contexts/ThemeContext.ts';
+import { Screen } from './types.ts';
+import type { AstronautData, UserData, UserType, SymptomLog, CaptainLog, Mood, SleepQuality, DoctorAdvice, MissionProcedure, MassProtocol, DailyCheckInLog, MissionTask, ChatMessage } from './types.ts';
+import { ThemeContext } from './contexts/ThemeContext.ts';
+import type { Theme } from './contexts/ThemeContext.ts';
 import { maitriApiService } from './services/maitriApiService.ts';
 import { getToken, removeToken } from './services/apiService.ts';
 

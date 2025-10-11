@@ -6,7 +6,6 @@ import { User, Astronaut } from '../db';
 const router = express.Router();
 
 // POST /api/auth/register
-// FIX: Explicitly type req and res to resolve property access errors.
 router.post('/register', async (req: express.Request, res: express.Response) => {
     const { name, password, securityQuestion, securityAnswer } = req.body;
 
@@ -48,7 +47,6 @@ router.post('/register', async (req: express.Request, res: express.Response) => 
 });
 
 // POST /api/auth/login
-// FIX: Explicitly type req and res to resolve property access errors.
 router.post('/login', async (req: express.Request, res: express.Response) => {
     const { name, password, type } = req.body;
     if (!name || !password || !type) {
@@ -94,7 +92,6 @@ router.post('/login', async (req: express.Request, res: express.Response) => {
 });
 
 // --- Forgot Password Flow ---
-// FIX: Explicitly type req and res to resolve property access errors.
 router.post('/forgot-password/start', async (req: express.Request, res: express.Response) => {
     const { name } = req.body;
     try {
@@ -104,7 +101,6 @@ router.post('/forgot-password/start', async (req: express.Request, res: express.
     } catch (err) { res.status(500).json({ message: 'Server error' }); }
 });
 
-// FIX: Explicitly type req and res to resolve property access errors.
 router.post('/forgot-password/verify', async (req: express.Request, res: express.Response) => {
     const { name, answer } = req.body;
     try {
@@ -117,7 +113,6 @@ router.post('/forgot-password/verify', async (req: express.Request, res: express
     } catch (err) { res.status(500).json({ message: 'Server error' }); }
 });
 
-// FIX: Explicitly type req and res to resolve property access errors.
 router.post('/forgot-password/reset', async (req: express.Request, res: express.Response) => {
     const { name, answer, newPassword } = req.body;
      try {

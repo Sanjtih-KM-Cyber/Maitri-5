@@ -2,8 +2,6 @@ import jwt from 'jsonwebtoken';
 import express from 'express';
 import type { UserType } from '../../../types';
 
-// FIX: Changed AuthRequest to extend express.Request directly to avoid type conflicts
-// with global types (e.g., from DOM lib), ensuring properties like .body, .params, and .header are available.
 export interface AuthRequest extends express.Request {
   user?: {
     id: string;
@@ -13,7 +11,7 @@ export interface AuthRequest extends express.Request {
 };
 
 export const auth = (req: AuthRequest, res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.header('Authorization');
+  const authHeader = req.headers.authorization;
 
   if (!authHeader) {
     return res.status(401).json({ message: 'No token, authorization denied' });

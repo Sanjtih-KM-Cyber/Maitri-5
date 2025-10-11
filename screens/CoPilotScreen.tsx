@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Screen, MissionTask, MissionProcedure } from '../types.ts';
+import { Screen } from '../types.ts';
+import type { MissionTask, MissionProcedure } from '../types.ts';
 import GlassCard from '../components/GlassCard.tsx';
 import { useTTS } from '../hooks/useTTS.ts';
 import { useSpeechRecognition } from '../hooks/useSpeechRecognition.ts';

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Mood, SleepQuality } from '../types.ts';
+import type { Mood, SleepQuality } from '../types.ts';
 
 interface DailyCheckInProps {
   isOpen: boolean;

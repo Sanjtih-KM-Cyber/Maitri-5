@@ -1,19 +1,14 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { connectDB } from './db';
 import authRoutes from './routes/auth';
 import apiRoutes from './routes/api';
 
 dotenv.config();
-
-// FIX: Add __dirname equivalent for ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -43,21 +38,23 @@ app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes);
 
 // --- Static Asset Serving & SPA Catch-all ---
-const rootDir = path.join(__dirname, '..', '..');
+// Use path.resolve for a more robust path to the project root directory.
+const rootDir = path.resolve(__dirname, '..', '..');
 
 // Serve static files from the project root.
 app.use(express.static(rootDir, {
-    // FIX: Add explicit `Response` type to resolve `setHeader` error.
-    setHeaders: (res: Response, filePath) => {
+    setHeaders: (res: http.ServerResponse, filePath: string) => {
+        // Ensure .ts and .tsx files are served with the correct JavaScript MIME type
+        // for in-browser Babel transpilation.
         if (path.extname(filePath) === '.tsx' || path.extname(filePath) === '.ts') {
             res.setHeader('Content-Type', 'application/javascript');
         }
     }
 }));
 
-// SPA catch-all: for any request not handled, send index.html.
-// FIX: Add explicit `Request` and `Response` types to resolve handler signature errors.
-app.get('*', (req: Request, res: Response) => {
+// SPA catch-all: for any request that doesn't match an API route or a static file,
+// send the main index.html file. This is crucial for client-side routing.
+app.get('*', (req: express.Request, res: express.Response) => {
     res.sendFile(path.join(rootDir, 'index.html'));
 });
 

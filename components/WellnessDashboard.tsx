@@ -1,8 +1,10 @@
-
 import React, { useState } from 'react';
 import GlassCard from './GlassCard.tsx';
-import { DailyCheckInLog, SymptomLog, Mood } from '../types.ts';
-import { subDays, format, isWithinInterval, eachDayOfInterval, parseISO } from 'date-fns';
+import type { DailyCheckInLog, SymptomLog, Mood } from '../types.ts';
+// FIX: Import subDays and parseISO from their specific subpaths to resolve potential module resolution issues. The other functions are correctly imported from the main package.
+import { format, isWithinInterval, eachDayOfInterval } from 'date-fns';
+import subDays from 'date-fns/subDays';
+import parseISO from 'date-fns/parseISO';
 
 interface WellnessDashboardProps {
     dailyLogs: DailyCheckInLog[];

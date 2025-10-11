@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { EarthlinkMessage } from '../types.ts';
+import type { EarthlinkMessage } from '../types.ts';
 import { maitriApiService } from '../services/maitriApiService.ts';
 
 interface EarthlinkModalProps {

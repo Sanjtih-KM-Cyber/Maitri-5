@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Screen, SymptomLog, DoctorAdvice, DailyCheckInLog, MassProtocol } from '../types.ts';
+import { Screen } from '../types.ts';
+import type { SymptomLog, DoctorAdvice, DailyCheckInLog, MassProtocol } from '../types.ts';
 import GlassCard from '../components/GlassCard.tsx';
 import WellnessDashboard from '../components/WellnessDashboard.tsx';
 import BreathingExercise from '../components/BreathingExercise.tsx';

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { MassProtocol } from '../types.ts';
+import type { MassProtocol } from '../types.ts';
 
 interface WorkoutTimerProps {
   isOpen: boolean;

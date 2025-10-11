@@ -8,8 +8,8 @@ const router = express.Router();
 
 // --- Helper function to emit updates ---
 const emitAstronautUpdate = async (name: string) => {
-    // FIX: Use dynamic import() for ES Modules to handle circular dependency with index.ts
-    const { io } = await import('../index');
+    // Use require for CommonJS modules to handle the circular dependency
+    const { io } = require('../index');
     const updatedAstronaut = await Astronaut.findOne({ name });
     if (updatedAstronaut) {
         io.emit('astronaut-data-updated', updatedAstronaut.toObject());
@@ -19,7 +19,6 @@ const emitAstronautUpdate = async (name: string) => {
 // --- Astronaut Routes (for logged-in user) ---
 
 // GET /api/astronauts/me - Get my own data
-// FIX: Explicitly type res as express.Response to resolve property access errors.
 router.get('/astronauts/me', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const astronautData = await Astronaut.findOne({ name: req.user?.name });
@@ -34,7 +33,6 @@ router.get('/astronauts/me', auth, async (req: AuthRequest, res: express.Respons
 });
 
 // POST /api/astronauts/me/symptoms
-// FIX: Explicitly type res as express.Response to resolve property access errors.
 router.post('/astronauts/me/symptoms', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { symptom, severity, notes, photo, video } = req.body;
@@ -56,7 +54,6 @@ router.post('/astronauts/me/symptoms', auth, async (req: AuthRequest, res: expre
 });
 
 // PUT /api/astronauts/me/symptoms/:logId/media
-// FIX: Explicitly type res as express.Response to resolve property access errors.
 router.put('/astronauts/me/symptoms/:logId/media', auth, async (req: AuthRequest, res: express.Response) => {
     const { logId } = req.params;
     const { mediaUrl, mediaType } = req.body;
@@ -72,7 +69,6 @@ router.put('/astronauts/me/symptoms/:logId/media', auth, async (req: AuthRequest
 });
 
 // POST /api/astronauts/me/captain-logs
-// FIX: Explicitly type res as express.Response to resolve property access errors.
 router.post('/astronauts/me/captain-logs', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { text, photo, video } = req.body;
@@ -88,7 +84,6 @@ router.post('/astronauts/me/captain-logs', auth, async (req: AuthRequest, res: e
 });
 
 // POST /api/astronauts/me/check-ins
-// FIX: Explicitly type res as express.Response to resolve property access errors.
 router.post('/astronauts/me/check-ins', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { mood, sleep, date } = req.body;
@@ -110,7 +105,6 @@ router.post('/astronauts/me/check-ins', auth, async (req: AuthRequest, res: expr
 });
 
 // PUT /api/astronauts/me/tasks
-// FIX: Explicitly type res as express.Response to resolve property access errors.
 router.put('/astronauts/me/tasks', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { tasks } = req.body;
@@ -121,7 +115,6 @@ router.put('/astronauts/me/tasks', auth, async (req: AuthRequest, res: express.R
 });
 
 // PUT /api/astronauts/me/earthlink/:messageId/viewed
-// FIX: Explicitly type res as express.Response to resolve property access errors.
 router.put('/astronauts/me/earthlink/:messageId/viewed', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         await Astronaut.updateOne(
@@ -134,7 +127,6 @@ router.put('/astronauts/me/earthlink/:messageId/viewed', auth, async (req: AuthR
 });
 
 // POST /api/astronauts/me/earthlink
-// FIX: Explicitly type res as express.Response to resolve property access errors.
 router.post('/astronauts/me/earthlink', auth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { from, text, photoUrl, videoUrl } = req.body;
@@ -154,7 +146,7 @@ router.post('/astronauts/me/earthlink', auth, async (req: AuthRequest, res: expr
 // --- Admin Routes ---
 
 // GET /api/admin/astronauts
-router.get('/admin/astronauts', [auth, adminAuth], async (req, res: express.Response) => {
+router.get('/admin/astronauts', auth, adminAuth, async (req: AuthRequest, res: express.Response) => {
     try {
         const astronauts = await Astronaut.find().sort({ name: 1 });
         res.json(astronauts.map(a => a.toObject()));
@@ -162,8 +154,7 @@ router.get('/admin/astronauts', [auth, adminAuth], async (req, res: express.Resp
 });
 
 // POST /api/admin/astronauts/:name/advice
-// FIX: Explicitly type res as express.Response to resolve property access errors.
-router.post('/admin/astronauts/:name/advice', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
+router.post('/admin/astronauts/:name/advice', auth, adminAuth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { text, symptomLogId } = req.body;
         const newAdvice: DoctorAdvice = {
@@ -178,8 +169,7 @@ router.post('/admin/astronauts/:name/advice', [auth, adminAuth], async (req: Aut
 });
 
 // POST /api/admin/astronauts/:name/procedures
-// FIX: Explicitly type res as express.Response to resolve property access errors.
-router.post('/admin/astronauts/:name/procedures', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
+router.post('/admin/astronauts/:name/procedures', auth, adminAuth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { name, steps } = req.body;
         const newProc: MissionProcedure = {
@@ -193,8 +183,7 @@ router.post('/admin/astronauts/:name/procedures', [auth, adminAuth], async (req:
 });
 
 // POST /api/admin/astronauts/:name/mass-protocols
-// FIX: Explicitly type res as express.Response to resolve property access errors.
-router.post('/admin/astronauts/:name/mass-protocols', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
+router.post('/admin/astronauts/:name/mass-protocols', auth, adminAuth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { name, sets, duration, rest } = req.body;
         const newProto: MassProtocol = {
@@ -208,8 +197,7 @@ router.post('/admin/astronauts/:name/mass-protocols', [auth, adminAuth], async (
 });
 
 // PUT /api/admin/astronauts/:name/photo
-// FIX: Explicitly type res as express.Response to resolve property access errors.
-router.put('/admin/astronauts/:name/photo', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
+router.put('/admin/astronauts/:name/photo', auth, adminAuth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { photoUrl } = req.body;
         await Astronaut.updateOne({ name: req.params.name }, { $set: { photoUrl } });
@@ -219,8 +207,7 @@ router.put('/admin/astronauts/:name/photo', [auth, adminAuth], async (req: AuthR
 });
 
 // POST /api/admin/astronauts/:name/earthlink
-// FIX: Explicitly type res as express.Response to resolve property access errors.
-router.post('/admin/astronauts/:name/earthlink', [auth, adminAuth], async (req: AuthRequest, res: express.Response) => {
+router.post('/admin/astronauts/:name/earthlink', auth, adminAuth, async (req: AuthRequest, res: express.Response) => {
     try {
         const { from, text, photoUrl, videoUrl } = req.body;
         const newMessage: EarthlinkMessage = {

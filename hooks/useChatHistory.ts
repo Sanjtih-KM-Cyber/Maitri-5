@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
-import { ChatMessage } from '../types.ts';
+import type { ChatMessage } from '../types.ts';
 
 const DB_NAME = 'MAITRI_DB';
 const DB_VERSION = 1;

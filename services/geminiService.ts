@@ -1,6 +1,8 @@
 
-import { GoogleGenAI, Type, GenerateContentResponse, FunctionDeclaration } from "@google/genai";
-import { ChatMessage, Screen, SymptomLog, MissionTask } from "../types.ts";
+import { GoogleGenAI, Type } from "@google/genai";
+import type { GenerateContentResponse, FunctionDeclaration } from "@google/genai";
+import { Screen } from "../types.ts";
+import type { ChatMessage, SymptomLog, MissionTask } from "../types.ts";
 
 // Fallback to an empty string if the API key is not provided in the environment.
 // This prevents the constructor from throwing an error and crashing the app on load.

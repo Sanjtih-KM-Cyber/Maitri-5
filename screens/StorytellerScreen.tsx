@@ -1,6 +1,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Screen, CaptainLog } from '../types.ts';
+import { Screen } from '../types.ts';
+import type { CaptainLog } from '../types.ts';
 import GlassCard from '../components/GlassCard.tsx';
 import { generateCreativeText } from '../services/geminiService.ts';
 import { blobToDataURL } from '../utils.ts';

@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
-import { Screen, AstronautData, Mood, SleepQuality, MissionTask, EarthlinkMessage } from '../types.ts';
+import { Screen } from '../types.ts';
+import type { AstronautData, Mood, SleepQuality, MissionTask, EarthlinkMessage } from '../types.ts';
 import DailyBriefing from '../components/DailyBriefing.tsx';
 import EarthlinkStatus from '../components/EarthlinkStatus.tsx';
 import DailyCheckIn from '../components/DailyCheckIn.tsx';
